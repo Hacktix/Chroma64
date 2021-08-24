@@ -17,8 +17,6 @@ jobs:
       uses: xt0rted/dotnet-tool-restore@v1
     - name: Run dotnet format
       uses: xt0rted/dotnet-format@v1
-      with:
-        version: 5
   build:
     needs: lint
     runs-on: ubuntu-latest
