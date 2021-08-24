@@ -1,7 +1,7 @@
 name: Chroma64 Pipeline
 on:
   push:
-    branches: [ master, feature_* ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
