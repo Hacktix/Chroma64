@@ -1,4 +1,4 @@
-name: Feature Branch Workflow
+name: Chroma64 Feature Branch Pipeline
 on:
   push:
     branches: [ feature_* ]

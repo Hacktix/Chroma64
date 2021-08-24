@@ -1,4 +1,4 @@
-name: Master Workflow
+name: Chroma64 Master Pipeline
 on:
   push:
     branches: [ master ]
