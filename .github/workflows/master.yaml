@@ -1,4 +1,4 @@
-name: Chroma64 Pipeline
+name: Chroma64 Master Pipeline
 on:
   push:
     branches: [ master ]
