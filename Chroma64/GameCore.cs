@@ -4,7 +4,7 @@ namespace Chroma64
 {
     internal class GameCore : Game
     {
-        public GameCore() : base( new(false , false)  )
+        public GameCore() : base(new(false, false))
         {
         }
     }
