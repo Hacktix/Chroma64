@@ -6,7 +6,19 @@ on:
     branches: [ master ]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Add dotnet-format problem matcher
+      uses: xt0rted/dotnet-format-problem-matcher@v1
+    - name: Restore dotnet tools
+      uses: xt0rted/dotnet-tool-restore@v1
+    - name: Run dotnet format
+      uses: xt0rted/dotnet-format@v1
   build:
+    needs: lint
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
