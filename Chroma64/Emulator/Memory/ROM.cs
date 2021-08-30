@@ -7,14 +7,12 @@ using System.Threading.Tasks;
 
 namespace Chroma64.Emulator.Memory
 {
-    unsafe class ROM
+    unsafe class ROM : BigEndianMemory
     {
-        private byte[] rom;
-
         public ROM(string filePath)
         {
-            rom = File.ReadAllBytes(filePath);
-            fixed(byte *romPtr = rom)
+            bytes = File.ReadAllBytes(filePath);
+            fixed(byte *romPtr = bytes)
             {
                 // Get 32 bit identifier and re-order bytes depending on value
                 uint formatIdent = *(uint*)romPtr;
@@ -27,7 +25,7 @@ namespace Chroma64.Emulator.Memory
 
                     // Byte-swapped format (BADC)
                     case 0x12408037:
-                        for(int i = 0; i < rom.Length; i += 2)
+                        for(int i = 0; i < bytes.Length; i += 2)
                         {
                             byte tmp = romPtr[i];
                             romPtr[i] = romPtr[i + 1];
@@ -38,7 +36,7 @@ namespace Chroma64.Emulator.Memory
 
                     // Little endian format (DCBA)
                     case 0x80371240:
-                        for (int i = 0; i < rom.Length; i += 4)
+                        for (int i = 0; i < bytes.Length; i += 4)
                         {
                             byte tmp = romPtr[i];
                             romPtr[i] = romPtr[i + 3];
@@ -57,11 +55,11 @@ namespace Chroma64.Emulator.Memory
                 }
 
                 // Reverse ROM byte array for BE-LE Mapping
-                Array.Reverse(rom);
+                Array.Reverse(bytes);
 
                 // Extra validation + logging
-                Console.WriteLine($"[ROM Loader] Header: 0x{(*(uint*)(romPtr + rom.Length - 4)).ToString("X4")}");
-                if ((*(uint*)(romPtr + rom.Length - 4)) != 0x80371240)
+                Console.WriteLine($"[ROM Loader] Header: 0x{Read<uint>(0).ToString("X4")}");
+                if ((*(uint*)(romPtr + bytes.Length - 4)) != 0x80371240)
                     throw new Exception("[ROM Loader] Invalid ROM File!");
             }
         }
