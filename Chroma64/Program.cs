@@ -2,5 +2,5 @@
 
 internal static class Program
 {
-    private static void Main(string[] args) => new GameCore().Run();
+    private static void Main(string[] args) => new GameCore(args).Run();
 }
