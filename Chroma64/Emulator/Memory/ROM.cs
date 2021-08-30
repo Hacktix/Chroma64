@@ -12,11 +12,11 @@ namespace Chroma64.Emulator.Memory
         public ROM(string filePath)
         {
             bytes = File.ReadAllBytes(filePath);
-            fixed(byte *romPtr = bytes)
+            fixed (byte* romPtr = bytes)
             {
                 // Get 32 bit identifier and re-order bytes depending on value
                 uint formatIdent = *(uint*)romPtr;
-                switch(formatIdent)
+                switch (formatIdent)
                 {
                     // Native big endian format (ABCD)
                     case 0x40123780:
@@ -25,7 +25,7 @@ namespace Chroma64.Emulator.Memory
 
                     // Byte-swapped format (BADC)
                     case 0x12408037:
-                        for(int i = 0; i < bytes.Length; i += 2)
+                        for (int i = 0; i < bytes.Length; i += 2)
                         {
                             byte tmp = romPtr[i];
                             romPtr[i] = romPtr[i + 1];
