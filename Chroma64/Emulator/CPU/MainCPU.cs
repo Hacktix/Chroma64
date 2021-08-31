@@ -65,13 +65,13 @@ namespace Chroma64.Emulator.CPU
 
         public void Tick(int cycles)
         {
-            for(int i = 0; i < cycles; i++)
+            for (int i = 0; i < cycles; i++)
             {
                 uint instr = bus.Read<uint>(pc);
                 pc += 4;
 
                 uint opcode = (instr & 0xFC000000) >> 26;
-                if(instrs.ContainsKey(opcode))
+                if (instrs.ContainsKey(opcode))
                     instrs[opcode](instr);
                 else
                 {
