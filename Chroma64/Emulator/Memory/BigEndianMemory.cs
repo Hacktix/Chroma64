@@ -1,4 +1,7 @@
-﻿namespace Chroma64.Emulator.Memory
+﻿using Chroma64.Util;
+using System;
+
+namespace Chroma64.Emulator.Memory
 {
     unsafe class BigEndianMemory
     {
