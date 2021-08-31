@@ -73,7 +73,7 @@ namespace Chroma64.Emulator.Memory
                 return addr - 0xA0000000;
 
             // KSSEG
-            else if(addr < 0xE0000000)
+            else if (addr < 0xE0000000)
             {
                 Log.FatalError("Unimplemented access to KSSEG");
                 return 0;
