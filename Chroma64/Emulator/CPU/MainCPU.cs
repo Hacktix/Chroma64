@@ -77,7 +77,7 @@ namespace Chroma64.Emulator.CPU
                 pc += 4;
 
                 // Decode opcode & execute
-                if(instr != 0)
+                if (instr != 0)
                 {
                     uint opcode = (instr & 0xFC000000) >> 26;
                     if (instrs.ContainsKey(opcode))
@@ -90,7 +90,7 @@ namespace Chroma64.Emulator.CPU
                 }
 
                 // Handle queued branches
-                if(branchQueued > 0 && --branchQueued == 0)
+                if (branchQueued > 0 && --branchQueued == 0)
                     pc = branchTarget;
             }
         }
@@ -167,18 +167,18 @@ namespace Chroma64.Emulator.CPU
         {
             CPUREG src = (CPUREG)((instr & 0x3E00000) >> 21);
             CPUREG dest = (CPUREG)((instr & 0x1F0000) >> 16);
-            long val = (int)((instr & 0xFFFF) << 16);
+            long val = (short)(instr & 0xFFFF);
             long regval = GetReg(src);
             SetReg(dest, regval + val);
 
-            LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {regval+val:X16} -> {dest}");
+            LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
         }
 
         void MIPS_LW(uint instr)
         {
             CPUREG src = (CPUREG)((instr & 0x3E00000) >> 21);
             CPUREG dest = (CPUREG)((instr & 0x1F0000) >> 16);
-            short offset = (short)((instr & 0xFFFF) << 16);
+            short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
             short val = bus.Read<short>(addr);
@@ -196,7 +196,7 @@ namespace Chroma64.Emulator.CPU
             long val1 = GetReg(src);
             long val2 = GetReg(dest);
             bool cond = val1 != val2;
-            if(cond)
+            if (cond)
             {
                 branchQueued = 2;
                 branchTarget = addr;
