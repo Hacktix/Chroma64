@@ -21,15 +21,15 @@ namespace Chroma64.Emulator.Memory
 
             // RDRAM (Built-in)
             if (addr >= 0x00000000 && addr <= 0x003FFFFF)
-                return RDRAM.Read<T>(addr & 0x003FFFFF);
+                return RDRAM.Read<T>(addr & 0x3FFFFF);
 
             // SP DMEM
             else if (addr >= 0x04000000 && addr <= 0x04000FFF)
-                return SP_DMEM.Read<T>(addr & 0x04000FFF);
+                return SP_DMEM.Read<T>(addr & 0xFFF);
 
             // SP IMEM
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
-                return SP_IMEM.Read<T>(addr & 0x04001FFF);
+                return SP_IMEM.Read<T>(addr & 0xFFF);
 
             // Cartridge Domain 1 Address 2 (ROM)
             else if (addr >= 0x10000000 && addr <= 0x1FBFFFFF)
@@ -44,15 +44,15 @@ namespace Chroma64.Emulator.Memory
 
             // RDRAM (Built-in)
             if (addr >= 0x00000000 && addr <= 0x003FFFFF)
-                RDRAM.Write<T>(addr & 0x003FFFFF, val);
+                RDRAM.Write<T>(addr & 0x3FFFFF, val);
 
             // SP DMEM
             else if (addr >= 0x04000000 && addr <= 0x04000FFF)
-                SP_DMEM.Write<T>(addr & 0x04000FFF, val);
+                SP_DMEM.Write<T>(addr & 0xFFF, val);
 
             // SP IMEM
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
-                SP_IMEM.Write<T>(addr & 0x04001FFF, val);
+                SP_IMEM.Write<T>(addr & 0xFFF, val);
         }
 
         private ulong GetPhysicalAddress(ulong addr)

@@ -15,25 +15,30 @@ namespace Chroma64.Emulator.CPU
     class COP0
     {
         private Random random = new Random();
-        private ulong[] regs = new ulong[32];
+        public ulong[] Registers = new ulong[32];
 
         // TODO: 64 bit regs
-        private void SetReg(COP0REG reg, ulong value)
+        public void SetReg(COP0REG reg, ulong value)
         {
             // Random
             if (reg == COP0REG.Random)
                 return;
 
-            regs[(int)reg] = value & 0xFFFFFFFF;
+            Registers[(int)reg] = value & 0xFFFFFFFF;
         }
 
-        private ulong GetReg(COP0REG reg)
+        public ulong GetReg(COP0REG reg)
         {
             // Random
             if (reg == COP0REG.Random)
                 return (ulong)random.Next((int)GetReg(COP0REG.Wired), 0x1F);
 
-            return regs[(int)reg] & 0xFFFFFFFF;
+            return Registers[(int)reg] & 0xFFFFFFFF;
+        }
+
+        public void Tick()
+        {
+
         }
     }
 }
