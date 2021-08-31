@@ -18,6 +18,11 @@ namespace Chroma64.Emulator.CPU
         private COP0 cop0 = new COP0();
         private MemoryBus bus;
 
+        private Dictionary<uint, Action<uint>> instrs = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsSpecial = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsBranch = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsCop = new Dictionary<uint, Action<uint>>();
+
         public MainCPU(MemoryBus bus)
         {
             this.bus = bus;
@@ -39,6 +44,12 @@ namespace Chroma64.Emulator.CPU
             cop0.Registers[12] = 0x70400004;
             cop0.Registers[15] = 0x00000B00;
             cop0.Registers[16] = 0x0006E463;
+
+            // # Initializing Instruction LUT
+            instrs = new Dictionary<uint, Action<uint>>()
+            {
+                { 0, InstrSpecial }, { 1, InstrBranch }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
+            };
         }
 
         private void SetReg(CPUREG reg, ulong value)
@@ -59,9 +70,53 @@ namespace Chroma64.Emulator.CPU
                 uint instr = bus.Read<uint>(pc);
                 pc += 4;
 
-                // TODO: Implement Instruction Decoding / Execution System
-                Log.FatalError($"Unimplemented Instruction: {instr.ToString("X8")}");
+                uint opcode = (instr & 0xFC000000) >> 26;
+                if(instrs.ContainsKey(opcode))
+                    instrs[opcode](instr);
+                else
+                {
+                    pc -= 4;
+                    Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                }
             }
         }
+
+        #region Sub-Instruction Decoders
+        private void InstrSpecial(uint instr)
+        {
+            uint opcode = (instr & 0x1F0000) >> 16;
+            if (instrsSpecial.ContainsKey(opcode))
+                instrsSpecial[opcode](instr);
+            else
+            {
+                pc -= 4;
+                Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+            }
+        }
+
+        private void InstrBranch(uint instr)
+        {
+            uint opcode = (instr & 0x1F0000) >> 16;
+            if (instrsBranch.ContainsKey(opcode))
+                instrsBranch[opcode](instr);
+            else
+            {
+                pc -= 4;
+                Log.FatalError($"Unimplemented Branch Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+            }
+        }
+
+        private void InstrCop(uint instr)
+        {
+            uint opcode = (instr & 0x3E00000) >> 21;
+            if (instrsCop.ContainsKey(opcode))
+                instrsCop[opcode](instr);
+            else
+            {
+                pc -= 4;
+                Log.FatalError($"Unimplemented Coprocessor Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+            }
+        }
+        #endregion
     }
 }
