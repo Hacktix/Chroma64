@@ -10,9 +10,8 @@ namespace Chroma64.Emulator.Memory
 {
     unsafe class ROM : BigEndianMemory
     {
-        public ROM(string filePath)
+        public ROM(string filePath) : base(File.ReadAllBytes(filePath))
         {
-            bytes = File.ReadAllBytes(filePath);
             fixed (byte* romPtr = bytes)
             {
                 // Get 32 bit identifier and re-order bytes depending on value

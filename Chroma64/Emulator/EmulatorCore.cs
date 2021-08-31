@@ -7,10 +7,12 @@ namespace Chroma64.Emulator
         private static readonly int TICKS_PER_FRAME = 1562500;
 
         private ROM _rom;
+        private MemoryBus _bus;
 
         public EmulatorCore(string romPath)
         {
             _rom = new ROM(romPath);
+            _bus = new MemoryBus(_rom);
         }
 
         public void TickFrame()
