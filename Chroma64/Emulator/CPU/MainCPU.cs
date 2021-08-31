@@ -12,7 +12,7 @@ namespace Chroma64.Emulator.CPU
 
     class MainCPU
     {
-        private ulong[] regs = new ulong[32];
+        private long[] regs = new long[32];
         private ulong pc = 0xA4000040;
 
         private COP0 cop0 = new COP0();
@@ -34,10 +34,13 @@ namespace Chroma64.Emulator.CPU
                 bus.Write((ulong)(0xA4000000 + i), bus.Read<byte>((ulong)(0xB0000000 + i)));
 
             // Initialize CPU Registers
-            regs[11] = 0xFFFFFFFFA4000040;
-            regs[20] = 0x0000000000000001;
-            regs[22] = 0x000000000000003F;
-            regs[29] = 0xFFFFFFFFA4001FF0;
+            unchecked
+            {
+                regs[11] = (long)0xFFFFFFFFA4000040;
+                regs[20] = 0x0000000000000001;
+                regs[22] = 0x000000000000003F;
+                regs[29] = (long)0xFFFFFFFFA4001FF0;
+            }
 
             // Initialize COP0 Registers
             cop0.Registers[1] = 0x0000001F;
@@ -52,13 +55,13 @@ namespace Chroma64.Emulator.CPU
             };
         }
 
-        private void SetReg(CPUREG reg, ulong value)
+        private void SetReg(CPUREG reg, long value)
         {
             if (reg != CPUREG.ZERO)
                 regs[(int)reg] = value;
         }
 
-        private ulong GetReg(CPUREG reg)
+        private long GetReg(CPUREG reg)
         {
             return regs[(int)reg];
         }

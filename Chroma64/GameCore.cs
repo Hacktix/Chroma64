@@ -7,13 +7,13 @@ namespace Chroma64
 {
     internal class GameCore : Game
     {
-        private EmulatorCore _emu = null;
+        private EmulatorCore emu;
 
         public GameCore(string[] args) : base(new(false, false))
         {
             if (args.Length >= 0 && File.Exists(args[0]))
             {
-                _emu = new EmulatorCore(args[0]);
+                emu = new EmulatorCore(args[0]);
             }
         }
 
@@ -21,9 +21,9 @@ namespace Chroma64
         {
             Window.Title = $"Chroma64 - {PerformanceCounter.FPS.ToString("F0")} FPS";
 
-            if (_emu != null)
+            if (emu != null)
             {
-                _emu.TickFrame();
+                emu.TickFrame();
             }
         }
     }
