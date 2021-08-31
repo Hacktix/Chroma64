@@ -15,9 +15,17 @@ namespace Chroma64.Util
             Console.Error.WriteLine($"[{NameOfCallingClass()}] {msg}");
         }
 
+        public static void CriticalError(string msg)
+        {
+            Console.Error.WriteLine($"[{NameOfCallingClass()} - CRIT] {msg}");
+            Console.Error.WriteLine($"Press any key to continue.");
+            Console.ReadKey();
+        }
+
         public static void FatalError(string msg)
         {
             Console.Error.WriteLine($"[{NameOfCallingClass()} - FATAL] {msg}");
+            Console.Error.WriteLine($"Press any key to exit.");
             Console.ReadKey();
             Environment.Exit(-1);
         }
