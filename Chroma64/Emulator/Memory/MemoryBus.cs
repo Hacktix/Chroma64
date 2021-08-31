@@ -35,6 +35,7 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x10000000 && addr <= 0x1FBFFFFF)
                 return rom.Read<T>(addr - 0x10000000);
 
+            Log.CriticalError($"Read from unknown address 0x{addr:X8}");
             return default;
         }
 
@@ -53,6 +54,9 @@ namespace Chroma64.Emulator.Memory
             // SP IMEM
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 SP_IMEM.Write<T>(addr & 0xFFF, val);
+
+            else
+                Log.CriticalError($"Write to unknown address 0x{addr:X8}");
         }
 
         private ulong GetPhysicalAddress(ulong addr)
