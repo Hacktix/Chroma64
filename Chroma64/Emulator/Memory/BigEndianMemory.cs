@@ -1,8 +1,18 @@
 ﻿namespace Chroma64.Emulator.Memory
 {
-    unsafe abstract class BigEndianMemory
+    unsafe class BigEndianMemory
     {
         protected byte[] bytes;
+
+        public BigEndianMemory(byte[] bytes)
+        {
+            this.bytes = bytes;
+        }
+
+        public BigEndianMemory(int size)
+        {
+            bytes = new byte[size];
+        }
 
         public T Read<T>(ulong addr) where T : unmanaged
         {

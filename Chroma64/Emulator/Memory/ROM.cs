@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Chroma64.Util;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,9 +10,8 @@ namespace Chroma64.Emulator.Memory
 {
     unsafe class ROM : BigEndianMemory
     {
-        public ROM(string filePath)
+        public ROM(string filePath) : base(File.ReadAllBytes(filePath))
         {
-            bytes = File.ReadAllBytes(filePath);
             fixed (byte* romPtr = bytes)
             {
                 // Get 32 bit identifier and re-order bytes depending on value
@@ -20,7 +20,7 @@ namespace Chroma64.Emulator.Memory
                 {
                     // Native big endian format (ABCD)
                     case 0x40123780:
-                        Console.WriteLine("[ROM Loader] Format: Native");
+                        Log.Info("Format: Native");
                         break;
 
                     // Byte-swapped format (BADC)
@@ -31,7 +31,7 @@ namespace Chroma64.Emulator.Memory
                             romPtr[i] = romPtr[i + 1];
                             romPtr[i + 1] = tmp;
                         }
-                        Console.WriteLine("[ROM Loader] Format: Byte-swapped");
+                        Log.Info("Format: Byte-swapped");
                         break;
 
                     // Little endian format (DCBA)
@@ -45,12 +45,12 @@ namespace Chroma64.Emulator.Memory
                             romPtr[i + 2] = romPtr[i + 1];
                             romPtr[i + 1] = tmp;
                         }
-                        Console.WriteLine("[ROM Loader] Format: Little-endian");
+                        Log.Info("Format: Little-endian");
                         break;
 
                     // Some other unknown format or a file that's not a ROM, error
                     default:
-                        Console.Error.WriteLine("[ROM Loader] Unknown ROM format");
+                        Log.Error("Unknown ROM format");
                         break;
                 }
 
@@ -58,9 +58,9 @@ namespace Chroma64.Emulator.Memory
                 Array.Reverse(bytes);
 
                 // Extra validation + logging
-                Console.WriteLine($"[ROM Loader] Header: 0x{Read<uint>(0).ToString("X4")}");
+                Log.Info($"Header: 0x{Read<uint>(0).ToString("X4")}");
                 if ((*(uint*)(romPtr + bytes.Length - 4)) != 0x80371240)
-                    throw new Exception("[ROM Loader] Invalid ROM File!");
+                    Log.FatalError("Invalid ROM File!");
             }
         }
     }
