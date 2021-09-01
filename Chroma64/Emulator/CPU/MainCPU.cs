@@ -56,11 +56,23 @@ namespace Chroma64.Emulator.CPU
 
             instrs = new Dictionary<uint, Action<uint>>()
             {
+                // Instruction Subset Decoders
                 { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
+
+                // Branch Instructions
                 { 5, MIPS_BNE },
+
+                // Load Instructions
                 { 15, MIPS_LUI }, { 35, MIPS_LW },
+
+                // Store Instructions
                 { 43, MIPS_SW },
-                { 9, MIPS_ADDIU },
+
+                // Arithmetic Operations
+                { 9, MIPS_ADDIU }, 
+
+                // Bitwise Operations
+                { 13, MIPS_ORI },
             };
 
             instrsCop = new Dictionary<uint, Action<uint>>()
@@ -152,54 +164,11 @@ namespace Chroma64.Emulator.CPU
         }
         #endregion
 
-
+        // # Instruction Implementations
 
         #region Normal Instructions
-        void MIPS_LUI(uint instr)
-        {
-            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            long val = (int)((instr & 0xFFFF) << 16);
-            SetReg(dest, val);
 
-            LogInstr("LUI", $"{val:X16} -> {dest}");
-        }
-
-        void MIPS_ADDIU(uint instr)
-        {
-            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
-            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            long val = (short)(instr & 0xFFFF);
-            long regval = GetReg(src);
-            SetReg(dest, regval + val);
-
-            LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
-        }
-
-        void MIPS_LW(uint instr)
-        {
-            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
-            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            short offset = (short)(instr & 0xFFFF);
-            long baseAddr = GetReg(src);
-            ulong addr = (ulong)(baseAddr + offset);
-            int val = bus.Read<int>(addr);
-            SetReg(dest, val);
-
-            LogInstr("LW", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X8} -> {dest}");
-        }
-
-        void MIPS_SW(uint instr)
-        {
-            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
-            short offset = (short)(instr & 0xFFFF);
-            long baseAddr = GetReg(dest);
-            ulong addr = (ulong)(baseAddr + offset);
-            int val = (int)GetReg(src);
-            bus.Write(addr, val);
-
-            LogInstr("SW", $"{src} -> {val:X8} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
-        }
+        #region Branch Instructions
 
         void MIPS_BNE(uint instr)
         {
@@ -218,6 +187,82 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("BNE", $"{src} == {dest} -> {val1:X16} == {val2:X16} -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
+
+        #endregion
+
+        #region Load Instructions
+
+        void MIPS_LUI(uint instr)
+        {
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = (int)((instr & 0xFFFF) << 16);
+            SetReg(dest, val);
+
+            LogInstr("LUI", $"{val:X16} -> {dest}");
+        }
+
+        void MIPS_LW(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            int val = bus.Read<int>(addr);
+            SetReg(dest, val);
+
+            LogInstr("LW", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X8} -> {dest}");
+        }
+
+        #endregion
+
+        #region Store Instructions
+
+        void MIPS_SW(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(dest);
+            ulong addr = (ulong)(baseAddr + offset);
+            int val = (int)GetReg(src);
+            bus.Write(addr, val);
+
+            LogInstr("SW", $"{src} -> {val:X8} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
+
+        #endregion
+
+        #region Arithmetic Operations
+
+        void MIPS_ADDIU(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = (short)(instr & 0xFFFF);
+            long regval = GetReg(src);
+            SetReg(dest, regval + val);
+
+            LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
+        }
+
+        #endregion
+
+        #region Bitwise Operations
+
+        void MIPS_ORI(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong val = (ushort)(instr & 0xFFFF);
+            ulong regval = (ulong)GetReg(src);
+            SetReg(dest, (long)(regval | val));
+
+            LogInstr("ORI", $"{src} -> {regval:X16} | {val:X16} -> {regval + val:X16} -> {dest}");
+        }
+
+        #endregion
+
         #endregion
 
         #region Coprocessor Instructions
