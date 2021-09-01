@@ -1,4 +1,5 @@
-﻿using Chroma64.Util;
+﻿using Chroma64.Emulator.IO;
+using Chroma64.Util;
 
 namespace Chroma64.Emulator.Memory
 {
@@ -7,6 +8,8 @@ namespace Chroma64.Emulator.Memory
         public BigEndianMemory RDRAM = new BigEndianMemory(0x400000);
         public BigEndianMemory SP_DMEM = new BigEndianMemory(0x1000);
         public BigEndianMemory SP_IMEM = new BigEndianMemory(0x1000);
+
+        public RDRAMInterface RI = new RDRAMInterface();
 
         private ROM rom;
 
@@ -31,6 +34,10 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 return SP_IMEM.Read<T>(addr & 0xFFF);
 
+            // RDRAM MMIO
+            if (addr >= 0x04700000 && addr <= 0x047FFFFF)
+                return RI.Read<T>(addr & 0xFFFFF);
+
             // Cartridge Domain 1 Address 2 (ROM)
             else if (addr >= 0x10000000 && addr <= 0x1FBFFFFF)
                 return rom.Read<T>(addr - 0x10000000);
@@ -54,6 +61,10 @@ namespace Chroma64.Emulator.Memory
             // SP IMEM
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 SP_IMEM.Write<T>(addr & 0xFFF, val);
+
+            // RDRAM MMIO
+            else if (addr >= 0x04700000 && addr <= 0x047FFFFF)
+                RI.Write<T>(addr & 0xFFFFF, val);
 
             else
                 Log.CriticalError($"Write to unknown address 0x{addr:X8}");
