@@ -73,11 +73,18 @@ namespace Chroma64.Emulator.CPU
 
                 // Bitwise Operations
                 { 13, MIPS_ORI },
+
+                // Misc.
+                { 47, MIPS_CACHE },
             };
 
             instrsSpecial = new Dictionary<uint, Action<uint>>()
             {
-                { 37, MIPS_OR },
+                // Bitwise Operations
+                { 36, MIPS_AND }, { 37, MIPS_OR },
+
+                // Misc.
+                { 43, MIPS_SLTU },
             };
 
             instrsCop = new Dictionary<uint, Action<uint>>()
@@ -261,7 +268,6 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("ADDI", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
         }
-
         #endregion
 
         #region Bitwise Operations
@@ -276,6 +282,36 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("ORI", $"{src} -> {regval:X16} | {val:X16} -> {regval | val:X16} -> {dest}");
         }
+
+        #endregion
+
+        #region Misc.
+
+        void MIPS_CACHE(uint instr)
+        {
+            LogInstr("CACHE", $"Not yet implemented.");
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Special Instructions
+
+        #region Bitwise Operations
+        void MIPS_AND(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val1 = GetReg(op1);
+            long val2 = GetReg(op2);
+            long res = val1 & val2;
+            SetReg(dest, res);
+
+            LogInstr("AND", $"{op1} & {op2} -> {val1:X16} & {val2:X16} -> {res:X16} -> {dest}");
+        }
+
         void MIPS_OR(uint instr)
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -288,7 +324,21 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("OR", $"{op1} | {op2} -> {val1:X16} | {val2:X16} -> {res:X16} -> {dest}");
         }
+        #endregion
 
+        #region Misc.
+        void MIPS_SLTU(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG target = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            ulong cp1 = (ulong)GetReg(src);
+            ulong cp2 = (ulong)GetReg(target);
+            long val = cp1 < cp2 ? 1 : 0;
+            SetReg(dest, val);
+
+            LogInstr("SLTU", $"{src} < {target} -> {cp1:X16} < {cp2:X16} -> {val} -> {dest}");
+        }
         #endregion
 
         #endregion
