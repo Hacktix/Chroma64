@@ -18,7 +18,12 @@ namespace Chroma64.Emulator.IO
 
     class RDRAMInterface : BigEndianMemory
     {
-        public RDRAMInterface() : base(0x20) { }
+        public RDRAMInterface() : base(0x20) {
+            SetRegister(RI.MODE_REG, 0xE);
+            SetRegister(RI.CONFIG_REG, 0x40);
+            SetRegister(RI.SELECT_REG, 0x14);
+            SetRegister(RI.REFRESH_REG, 0x63634);
+        }
 
         public new T Read<T>(ulong addr) where T : unmanaged
         {

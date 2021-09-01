@@ -34,8 +34,8 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 return SP_IMEM.Read<T>(addr & 0xFFF);
 
-            // RDRAM MMIO
-            if (addr >= 0x04700000 && addr <= 0x047FFFFF)
+            // RDRAM Interface
+            else if (addr >= 0x04700000 && addr <= 0x047FFFFF)
                 return RI.Read<T>(addr & 0xFFFFF);
 
             // Cartridge Domain 1 Address 2 (ROM)
@@ -62,7 +62,7 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 SP_IMEM.Write<T>(addr & 0xFFF, val);
 
-            // RDRAM MMIO
+            // RDRAM Interface
             else if (addr >= 0x04700000 && addr <= 0x047FFFFF)
                 RI.Write<T>(addr & 0xFFFFF, val);
 
