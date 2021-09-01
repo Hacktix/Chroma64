@@ -69,10 +69,15 @@ namespace Chroma64.Emulator.CPU
                 { 43, MIPS_SW },
 
                 // Arithmetic Operations
-                { 9, MIPS_ADDIU }, 
+                { 9, MIPS_ADDIU }, { 8, MIPS_ADDI },
 
                 // Bitwise Operations
                 { 13, MIPS_ORI },
+            };
+
+            instrsSpecial = new Dictionary<uint, Action<uint>>()
+            {
+                { 37, MIPS_OR },
             };
 
             instrsCop = new Dictionary<uint, Action<uint>>()
@@ -129,7 +134,7 @@ namespace Chroma64.Emulator.CPU
         #region Sub-Instruction Decoders
         private void InstrSpecial(uint instr)
         {
-            uint opcode = (instr & 0x1F0000) >> 16;
+            uint opcode = instr & 0x3F;
             if (instrsSpecial.ContainsKey(opcode))
                 instrsSpecial[opcode](instr);
             else
@@ -246,6 +251,17 @@ namespace Chroma64.Emulator.CPU
             LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
         }
 
+        void MIPS_ADDI(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = (short)(instr & 0xFFFF);
+            long regval = GetReg(src);
+            SetReg(dest, regval + val);
+
+            LogInstr("ADDI", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
+        }
+
         #endregion
 
         #region Bitwise Operations
@@ -258,7 +274,19 @@ namespace Chroma64.Emulator.CPU
             ulong regval = (ulong)GetReg(src);
             SetReg(dest, (long)(regval | val));
 
-            LogInstr("ORI", $"{src} -> {regval:X16} | {val:X16} -> {regval + val:X16} -> {dest}");
+            LogInstr("ORI", $"{src} -> {regval:X16} | {val:X16} -> {regval | val:X16} -> {dest}");
+        }
+        void MIPS_OR(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val1 = GetReg(op1);
+            long val2 = GetReg(op2);
+            long res = val1 | val2;
+            SetReg(dest, res);
+
+            LogInstr("OR", $"{op1} | {op2} -> {val1:X16} | {val2:X16} -> {res:X16} -> {dest}");
         }
 
         #endregion
