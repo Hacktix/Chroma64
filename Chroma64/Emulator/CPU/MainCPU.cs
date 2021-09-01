@@ -59,6 +59,7 @@ namespace Chroma64.Emulator.CPU
                 { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
                 { 5, MIPS_BNE },
                 { 15, MIPS_LUI }, { 35, MIPS_LW },
+                { 43, MIPS_SW },
                 { 9, MIPS_ADDIU },
             };
 
@@ -181,10 +182,23 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            short val = bus.Read<short>(addr);
+            int val = bus.Read<int>(addr);
             SetReg(dest, val);
 
-            LogInstr("LW", $"{src} -> {baseAddr:X16} + {offset:X4} -> [{addr:X16}] -> {val:X4} -> {dest}");
+            LogInstr("LW", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X8} -> {dest}");
+        }
+
+        void MIPS_SW(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(dest);
+            ulong addr = (ulong)(baseAddr + offset);
+            int val = (int)GetReg(src);
+            bus.Write(addr, val);
+
+            LogInstr("SW", $"{src} -> {val:X8} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
         void MIPS_BNE(uint instr)
