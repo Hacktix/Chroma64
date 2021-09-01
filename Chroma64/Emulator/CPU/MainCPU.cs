@@ -83,6 +83,9 @@ namespace Chroma64.Emulator.CPU
                 // Bitwise Operations
                 { 36, MIPS_AND }, { 37, MIPS_OR },
 
+                // Control Flow
+                { 8, MIPS_JR },
+
                 // Misc.
                 { 43, MIPS_SLTU },
             };
@@ -122,7 +125,7 @@ namespace Chroma64.Emulator.CPU
 
         private void LogInstr(string instr, string msg)
         {
-            Log.Info($"[PC = 0x{pc - 4:X8}] {instr.PadRight(6)} : {msg}");
+            Log.Info($"[PC = 0x{(pc - 4) & 0xFFFFFFFF:X8}] {instr.PadRight(6)} : {msg}");
         }
 
         #region CPU Register Instructions
@@ -324,6 +327,19 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("OR", $"{op1} | {op2} -> {val1:X16} | {val2:X16} -> {res:X16} -> {dest}");
         }
+        #endregion
+
+        #region Control Flow
+
+        void MIPS_JR(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            branchQueued = 2;
+            branchTarget = (ulong)GetReg(src);
+
+            LogInstr("JR", $"{branchTarget:X16} -> PC");
+        }
+
         #endregion
 
         #region Misc.
