@@ -156,7 +156,7 @@ namespace Chroma64.Emulator.CPU
         #region Normal Instructions
         void MIPS_LUI(uint instr)
         {
-            CPUREG dest = (CPUREG)((instr & 0x1F0000) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = (int)((instr & 0xFFFF) << 16);
             SetReg(dest, val);
 
@@ -165,8 +165,8 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_ADDIU(uint instr)
         {
-            CPUREG src = (CPUREG)((instr & 0x3E00000) >> 21);
-            CPUREG dest = (CPUREG)((instr & 0x1F0000) >> 16);
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = (short)(instr & 0xFFFF);
             long regval = GetReg(src);
             SetReg(dest, regval + val);
@@ -176,8 +176,8 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_LW(uint instr)
         {
-            CPUREG src = (CPUREG)((instr & 0x3E00000) >> 21);
-            CPUREG dest = (CPUREG)((instr & 0x1F0000) >> 16);
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
@@ -189,8 +189,8 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_BNE(uint instr)
         {
-            CPUREG src = (CPUREG)((instr & 0x3E00000) >> 21);
-            CPUREG dest = (CPUREG)((instr & 0x1F0000) >> 16);
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
             ulong addr = pc + offset;
             long val1 = GetReg(src);
@@ -209,8 +209,8 @@ namespace Chroma64.Emulator.CPU
         #region Coprocessor Instructions
         void MIPS_MTC0(uint instr)
         {
-            COP0REG dest = (COP0REG)((instr & 0xF800) >> 11);
-            CPUREG src = (CPUREG)((instr & 0x1F0000) >> 16);
+            COP0REG dest = (COP0REG)((instr & (0x1F << 11)) >> 11);
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
             cop0.SetReg(dest, GetReg(src));
 
             LogInstr("MTC0", $"{src} -> {GetReg(src):X16} -> {dest}");
