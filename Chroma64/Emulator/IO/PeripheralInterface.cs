@@ -31,7 +31,8 @@ namespace Chroma64.Emulator.IO
     {
         private MemoryBus bus;
 
-        public PeripheralInterface(MemoryBus bus) : base(0x34) {
+        public PeripheralInterface(MemoryBus bus) : base(0x34)
+        {
             this.bus = bus;
         }
 
@@ -46,7 +47,7 @@ namespace Chroma64.Emulator.IO
 
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
-            if(addr >= (ulong)PI.WR_LEN_REG && addr < (ulong)(PI.WR_LEN_REG + 3))
+            if (addr >= (ulong)PI.WR_LEN_REG && addr < (ulong)(PI.WR_LEN_REG + 3))
             {
                 base.Write<T>(addr, val);
                 ulong destAddr = GetRegister(PI.DRAM_ADDR_REG) & 0x7FFFFF;
