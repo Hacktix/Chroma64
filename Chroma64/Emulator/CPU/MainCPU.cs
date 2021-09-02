@@ -66,10 +66,10 @@ namespace Chroma64.Emulator.CPU
                 { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
 
                 // Branch Instructions
-                { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 21, MIPS_BNEL },
+                { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ },
 
                 // Load Instructions
-                { 15, MIPS_LUI }, { 35, MIPS_LW },
+                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 35, MIPS_LW },
 
                 // Store Instructions
                 { 43, MIPS_SW },
@@ -87,7 +87,7 @@ namespace Chroma64.Emulator.CPU
             instrsSpecial = new Dictionary<uint, Action<uint>>()
             {
                 // Bitwise Operations
-                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 6, MIPS_SRLV }, { 4, MIPS_SLLV },
+                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 2, MIPS_SRL }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV },
 
                 // Arithmetic Operations
                 { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU },
@@ -213,6 +213,15 @@ namespace Chroma64.Emulator.CPU
 
         #region Branch Instructions
 
+        void MIPS_J(uint instr)
+        {
+            ulong addr = (ulong)(int)((pc & 0xFC000000) | ((instr & 0x3FFFFFF) << 2));
+            branchQueued = 2;
+            branchTarget = addr;
+
+            LogInstr("J", $"{addr:X16} -> PC");
+        }
+
         void MIPS_JAL(uint instr)
         {
             ulong addr = (ulong)(int)((pc & 0xFC000000) | ((instr & 0x3FFFFFF) << 2));
@@ -280,6 +289,22 @@ namespace Chroma64.Emulator.CPU
                 pc += 4;
         }
 
+        void MIPS_BGTZ(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val > 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+
+            LogInstr("BGTZ", $"{src} > 0 -> {val:X16} > 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
         #endregion
 
         #region Load Instructions
@@ -291,6 +316,19 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, val);
 
             LogInstr("LUI", $"{val:X16} -> {dest}");
+        }
+
+        void MIPS_LB(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            byte val = bus.Read<byte>(addr);
+            SetReg(dest, val);
+
+            LogInstr("LB", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X2} -> {dest}");
         }
 
         void MIPS_LW(uint instr)
@@ -429,6 +467,18 @@ namespace Chroma64.Emulator.CPU
             LogInstr("XOR", $"{op1} ^ {op2} -> {val1:X16} ^ {val2:X16} -> {res:X16} -> {dest}");
         }
 
+        void MIPS_SRL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            uint val = (uint)GetReg(src);
+            int shift = (int)(instr & (0x1F << 6)) >> 6;
+            long res = (int)(val >> shift);
+            SetReg(dest, res);
+
+            LogInstr("SRL", $"{src} >> {shift} -> {val:X16} >> {shift:X} -> {res:X16} -> {dest}");
+        }
+
         void MIPS_SRLV(uint instr)
         {
             CPUREG op = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -440,6 +490,18 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, res);
 
             LogInstr("SRLV", $"{src} >> {op} -> {val:X16} >> {shift:X} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_SLL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            uint val = (uint)GetReg(src);
+            int shift = (int)(instr & (0x1F << 6)) >> 6;
+            long res = (int)(val << shift);
+            SetReg(dest, res);
+
+            LogInstr("SLL", $"{src} << {shift} -> {val:X16} << {shift:X} -> {res:X16} -> {dest}");
         }
 
         void MIPS_SLLV(uint instr)
