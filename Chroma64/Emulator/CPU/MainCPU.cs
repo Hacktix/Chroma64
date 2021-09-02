@@ -396,8 +396,8 @@ namespace Chroma64.Emulator.CPU
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
             CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            uint val1 = (uint)(ulong)GetReg(op1);
-            uint val2 = (uint)(ulong)GetReg(op2);
+            ulong val1 = (ulong)GetReg(op1);
+            ulong val2 = (ulong)GetReg(op2);
             ulong res = val1 * val2;
             hilo = res;
 
