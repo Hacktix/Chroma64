@@ -9,14 +9,16 @@ namespace Chroma64.Emulator.Memory
         public BigEndianMemory SP_DMEM = new BigEndianMemory(0x1000);
         public BigEndianMemory SP_IMEM = new BigEndianMemory(0x1000);
 
-        public RDRAMInterface RI = new RDRAMInterface();
-        public PeripheralInterface PI = new PeripheralInterface();
+        public RDRAMInterface RI;
+        public PeripheralInterface PI;
 
-        private ROM rom;
+        public ROM ROM;
 
         public MemoryBus(ROM rom)
         {
-            this.rom = rom;
+            ROM = rom;
+            RI = new RDRAMInterface();
+            PI = new PeripheralInterface(this);
         }
 
         public T Read<T>(ulong addr) where T : unmanaged
@@ -45,7 +47,7 @@ namespace Chroma64.Emulator.Memory
 
             // Cartridge Domain 1 Address 2 (ROM)
             else if (addr >= 0x10000000 && addr <= 0x1FBFFFFF)
-                return rom.Read<T>(addr - 0x10000000);
+                return ROM.Read<T>(addr - 0x10000000);
 
             Log.CriticalError($"Read from unknown address 0x{addr:X8}");
             return default;

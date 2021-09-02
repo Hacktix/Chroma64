@@ -29,7 +29,11 @@ namespace Chroma64.Emulator.IO
 
     class PeripheralInterface : BigEndianMemory
     {
-        public PeripheralInterface() : base(0x34) { }
+        private MemoryBus bus;
+
+        public PeripheralInterface(MemoryBus bus) : base(0x34) {
+            this.bus = bus;
+        }
 
         public new T Read<T>(ulong addr) where T : unmanaged
         {
@@ -42,7 +46,19 @@ namespace Chroma64.Emulator.IO
 
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
-            Log.Info($"PI Write to {addr:X16}");
+            if(addr >= (ulong)PI.WR_LEN_REG && addr < (ulong)(PI.WR_LEN_REG + 3))
+            {
+                base.Write<T>(addr, val);
+                ulong destAddr = GetRegister(PI.DRAM_ADDR_REG) & 0x7FFFFF;
+                ulong srcAddr = (GetRegister(PI.CART_ADDR_REG) & 0xFFFFFFFF) - 0x10000000;
+                ulong len = (GetRegister(PI.WR_LEN_REG) & 0x7FFFFF) + 1;
+
+                for (ulong i = 0; i < len; i += sizeof(ulong))
+                    bus.RDRAM.Write(destAddr + i, bus.ROM.Read<ulong>(srcAddr + i));
+
+                Log.Info($"PI DMA from {srcAddr:X8} to {destAddr:X8} with length {len:X}");
+                return;
+            }
 
             // Addresses over 0x33 are unused
             if (addr > 0x33)
