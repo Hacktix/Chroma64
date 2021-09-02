@@ -66,7 +66,7 @@ namespace Chroma64.Emulator.CPU
                 { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
 
                 // Branch Instructions
-                { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 21, MIPS_BNEL },
+                { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 21, MIPS_BNEL },
 
                 // Load Instructions
                 { 15, MIPS_LUI }, { 35, MIPS_LW },
@@ -212,6 +212,16 @@ namespace Chroma64.Emulator.CPU
         #region Normal Instructions
 
         #region Branch Instructions
+
+        void MIPS_JAL(uint instr)
+        {
+            ulong addr = (ulong)(int)((pc & 0xFC000000) | ((instr & 0x3FFFFFF) << 2));
+            SetReg(CPUREG.RA, (long)pc + 4);
+            branchQueued = 2;
+            branchTarget = addr;
+
+            LogInstr("JAL", $"{addr:X16} -> PC");
+        }
 
         void MIPS_BEQ(uint instr)
         {
