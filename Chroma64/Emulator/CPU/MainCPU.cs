@@ -14,7 +14,9 @@ namespace Chroma64.Emulator.CPU
     {
         private long[] regs = new long[32];
         private ulong pc = 0xA4000040;
-        private ulong hilo;
+
+        private long hi;
+        private long lo;
 
         private ulong breakpoint = 0;
         private bool debugging = false;
@@ -164,18 +166,6 @@ namespace Chroma64.Emulator.CPU
         private long GetReg(CPUREG reg)
         {
             return regs[(int)reg];
-        }
-
-        private int lo
-        {
-            get { return (int)(hilo & 0xFFFFFFFF); }
-            set { hilo = (hilo & 0xFFFFFFFF00000000) | (uint)value; }
-        }
-
-        private int hi
-        {
-            get { return (int)((hilo & 0xFFFFFFFF00000000) >> 32); }
-            set { hilo = (hilo & 0xFFFFFFFF) | (((uint)value) << 32); }
         }
         #endregion
 
@@ -504,9 +494,12 @@ namespace Chroma64.Emulator.CPU
             ulong val1 = (uint)GetReg(op1);
             ulong val2 = (uint)GetReg(op2);
             ulong res = val1 * val2;
-            hilo = res;
+            long resLo = (int)res;
+            long resHi = (int)(res >> 32);
+            lo = resLo;
+            hi = resHi;
 
-            LogInstr("MULTU", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> {res:X16} -> HILO");
+            LogInstr("MULTU", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
         }
 
         #endregion
