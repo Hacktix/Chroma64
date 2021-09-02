@@ -43,6 +43,13 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 return SP_IMEM.Read<T>(addr & 0xFFF);
 
+            // TODO: SP Registers
+            else if(addr >= 0x04040000 && addr <= 0x040FFFFF)
+            {
+                Log.Warning($"Unimplemented read from SP Register @ 0x{addr:X8}");
+                return default;
+            }
+
             // MIPS Interface
             else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
                 return MI.Read<T>(addr & 0xFFFFF);
@@ -86,6 +93,13 @@ namespace Chroma64.Emulator.Memory
             // SP IMEM
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 SP_IMEM.Write(addr & 0xFFF, val);
+
+            // TODO: SP Registers
+            else if (addr >= 0x04040000 && addr <= 0x040FFFFF)
+            {
+                Log.Warning($"Unimplemented write to SP Register @ 0x{addr:X8}");
+                return;
+            }
 
             // MIPS Interface
             else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
