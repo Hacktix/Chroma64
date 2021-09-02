@@ -1,10 +1,5 @@
 ﻿using Chroma64.Emulator.Memory;
 using Chroma64.Util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chroma64.Emulator.IO
 {

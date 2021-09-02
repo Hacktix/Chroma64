@@ -1,5 +1,4 @@
 ﻿using Chroma64.Emulator.Memory;
-using Chroma64.Util;
 
 namespace Chroma64.Emulator.IO
 {

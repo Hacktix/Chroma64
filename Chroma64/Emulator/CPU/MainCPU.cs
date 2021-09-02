@@ -16,20 +16,8 @@ namespace Chroma64.Emulator.CPU
         private ulong pc = 0xA4000040;
         private ulong hilo;
 
-        private ulong breakpoint = 0x800001AC;
+        private ulong breakpoint = 0;
         private bool debugging = false;
-
-        private int lo
-        {
-            get { return (int)(hilo & 0xFFFFFFFF); }
-            set { hilo = (hilo & 0xFFFFFFFF00000000) | (uint)value; }
-        }
-
-        private int hi
-        {
-            get { return (int)((hilo & 0xFFFFFFFF00000000) >> 32); }
-            set { hilo = (hilo & 0xFFFFFFFF) | (((uint)value) << 32); }
-        }
 
         private COP0 cop0 = new COP0();
         private MemoryBus bus;
@@ -176,6 +164,18 @@ namespace Chroma64.Emulator.CPU
         private long GetReg(CPUREG reg)
         {
             return regs[(int)reg];
+        }
+
+        private int lo
+        {
+            get { return (int)(hilo & 0xFFFFFFFF); }
+            set { hilo = (hilo & 0xFFFFFFFF00000000) | (uint)value; }
+        }
+
+        private int hi
+        {
+            get { return (int)((hilo & 0xFFFFFFFF00000000) >> 32); }
+            set { hilo = (hilo & 0xFFFFFFFF) | (((uint)value) << 32); }
         }
         #endregion
 
