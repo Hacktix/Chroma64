@@ -14,8 +14,10 @@ namespace Chroma64.Emulator.Memory
         public MIPSInterface MI;
         public SerialInterface SI;
         public AudioInterface AI;
+        public VideoInterface VI;
 
         public ROM ROM;
+        public PIFRAM PIFRAM;
 
         public MemoryBus(ROM rom)
         {
@@ -25,6 +27,8 @@ namespace Chroma64.Emulator.Memory
             MI = new MIPSInterface();
             SI = new SerialInterface();
             AI = new AudioInterface();
+            PIFRAM = new PIFRAM();
+            VI = new VideoInterface();
         }
 
         public T Read<T>(ulong addr) where T : unmanaged
@@ -54,7 +58,11 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
                 return MI.Read<T>(addr & 0xFFFFF);
 
-            // MIPS Interface
+            // Video Interface
+            else if (addr >= 0x04400000 && addr <= 0x044FFFFF)
+                return VI.Read<T>(addr & 0xFFFFF);
+
+            // Audio Interface
             else if (addr >= 0x04500000 && addr <= 0x045FFFFF)
                 return AI.Read<T>(addr & 0xFFFFF);
 
@@ -73,6 +81,10 @@ namespace Chroma64.Emulator.Memory
             // Cartridge Domain 1 Address 2 (ROM)
             else if (addr >= 0x10000000 && addr <= 0x1FBFFFFF)
                 return ROM.Read<T>(addr - 0x10000000);
+
+            // PIF RAM
+            else if (addr >= 0x1FC007C0 && addr <= 0x1FC007FF)
+                return PIFRAM.Read<T>(addr & 0x3F);
 
             Log.CriticalError($"Read from unknown address 0x{addr:X8}");
             return default;
@@ -105,6 +117,10 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
                 MI.Write(addr & 0xFFFFF, val);
 
+            // Video Interface
+            else if (addr >= 0x04400000 && addr <= 0x044FFFFF)
+                VI.Write(addr & 0xFFFFF, val);
+
             // Audio Interface
             else if (addr >= 0x04500000 && addr <= 0x045FFFFF)
                 AI.Write(addr & 0xFFFFF, val);
@@ -120,6 +136,10 @@ namespace Chroma64.Emulator.Memory
             // Serial Interface
             else if (addr >= 0x04800000 && addr <= 0x048FFFFF)
                 SI.Write(addr & 0xFFFFF, val);
+
+            // PIF RAM
+            else if (addr >= 0x1FC007C0 && addr <= 0x1FC007FF)
+                PIFRAM.Write(addr & 0x3F, val);
 
             else
                 Log.CriticalError($"Write to unknown address 0x{addr:X8}");
