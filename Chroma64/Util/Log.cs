@@ -10,9 +10,15 @@ namespace Chroma64.Util
         {
             Console.WriteLine($"[{NameOfCallingClass()}] {msg}");
         }
+
+        public static void Warning(string msg)
+        {
+            Console.WriteLine($"[{NameOfCallingClass()} - WARN] {msg}");
+        }
+
         public static void Error(string msg)
         {
-            Console.Error.WriteLine($"[{NameOfCallingClass()}] {msg}");
+            Console.Error.WriteLine($"[{NameOfCallingClass()} - ERROR] {msg}");
         }
 
         public static void CriticalError(string msg)
