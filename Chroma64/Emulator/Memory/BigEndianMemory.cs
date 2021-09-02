@@ -5,7 +5,7 @@ namespace Chroma64.Emulator.Memory
 {
     unsafe class BigEndianMemory
     {
-        private byte[] bytes;
+        protected byte[] bytes;
 
         public BigEndianMemory(byte[] bytes)
         {
