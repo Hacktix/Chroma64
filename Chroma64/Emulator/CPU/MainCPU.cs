@@ -72,7 +72,7 @@ namespace Chroma64.Emulator.CPU
                 { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 35, MIPS_LW }, { 55, MIPS_LD },
 
                 // Store Instructions
-                { 43, MIPS_SW }, { 63, MIPS_SD },
+                { 40, MIPS_SB }, { 43, MIPS_SW }, { 63, MIPS_SD },
 
                 // Arithmetic Operations
                 { 9, MIPS_ADDIU }, { 8, MIPS_ADDI },
@@ -373,6 +373,19 @@ namespace Chroma64.Emulator.CPU
         #endregion
 
         #region Store Instructions
+
+        void MIPS_SB(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(dest);
+            ulong addr = (ulong)(baseAddr + offset);
+            byte val = (byte)GetReg(src);
+            bus.Write(addr, val);
+
+            LogInstr("SB", $"{src} -> {val:X2} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
 
         void MIPS_SW(uint instr)
         {
