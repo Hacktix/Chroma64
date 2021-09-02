@@ -69,10 +69,10 @@ namespace Chroma64.Emulator.CPU
                 { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ },
 
                 // Load Instructions
-                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 35, MIPS_LW },
+                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 35, MIPS_LW }, { 55, MIPS_LD },
 
                 // Store Instructions
-                { 43, MIPS_SW },
+                { 43, MIPS_SW }, { 63, MIPS_SD },
 
                 // Arithmetic Operations
                 { 9, MIPS_ADDIU }, { 8, MIPS_ADDI },
@@ -325,6 +325,19 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
+            sbyte val = bus.Read<sbyte>(addr);
+            SetReg(dest, val);
+
+            LogInstr("LB", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X2} -> {dest}");
+        }
+
+        void MIPS_LBU(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
             byte val = bus.Read<byte>(addr);
             SetReg(dest, val);
 
@@ -344,6 +357,19 @@ namespace Chroma64.Emulator.CPU
             LogInstr("LW", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X8} -> {dest}");
         }
 
+        void MIPS_LD(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            long val = bus.Read<long>(addr);
+            SetReg(dest, val);
+
+            LogInstr("LD", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> {dest}");
+        }
+
         #endregion
 
         #region Store Instructions
@@ -359,6 +385,19 @@ namespace Chroma64.Emulator.CPU
             bus.Write(addr, val);
 
             LogInstr("SW", $"{src} -> {val:X8} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
+
+        void MIPS_SD(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(dest);
+            ulong addr = (ulong)(baseAddr + offset);
+            long val = GetReg(src);
+            bus.Write(addr, val);
+
+            LogInstr("SD", $"{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
         #endregion
