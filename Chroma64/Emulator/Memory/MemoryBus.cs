@@ -13,6 +13,7 @@ namespace Chroma64.Emulator.Memory
         public PeripheralInterface PI;
         public MIPSInterface MI;
         public SerialInterface SI;
+        public AudioInterface AI;
 
         public ROM ROM;
 
@@ -23,6 +24,7 @@ namespace Chroma64.Emulator.Memory
             PI = new PeripheralInterface(this);
             MI = new MIPSInterface();
             SI = new SerialInterface();
+            AI = new AudioInterface();
         }
 
         public T Read<T>(ulong addr) where T : unmanaged
@@ -44,6 +46,10 @@ namespace Chroma64.Emulator.Memory
             // MIPS Interface
             else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
                 return MI.Read<T>(addr & 0xFFFFF);
+
+            // MIPS Interface
+            else if (addr >= 0x04500000 && addr <= 0x045FFFFF)
+                return AI.Read<T>(addr & 0xFFFFF);
 
             // Peripheral Interface
             else if (addr >= 0x04600000 && addr <= 0x046FFFFF)
@@ -84,6 +90,10 @@ namespace Chroma64.Emulator.Memory
             // MIPS Interface
             else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
                 MI.Write(addr & 0xFFFFF, val);
+
+            // Audio Interface
+            else if (addr >= 0x04500000 && addr <= 0x045FFFFF)
+                AI.Write(addr & 0xFFFFF, val);
 
             // Peripheral Interface
             else if (addr >= 0x04600000 && addr <= 0x046FFFFF)
