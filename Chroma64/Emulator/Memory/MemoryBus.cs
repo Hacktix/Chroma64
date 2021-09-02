@@ -12,6 +12,7 @@ namespace Chroma64.Emulator.Memory
         public RDRAMInterface RI;
         public PeripheralInterface PI;
         public MIPSInterface MI;
+        public SerialInterface SI;
 
         public ROM ROM;
 
@@ -21,6 +22,7 @@ namespace Chroma64.Emulator.Memory
             RI = new RDRAMInterface();
             PI = new PeripheralInterface(this);
             MI = new MIPSInterface();
+            SI = new SerialInterface();
         }
 
         public T Read<T>(ulong addr) where T : unmanaged
@@ -50,6 +52,10 @@ namespace Chroma64.Emulator.Memory
             // RDRAM Interface
             else if (addr >= 0x04700000 && addr <= 0x047FFFFF)
                 return RI.Read<T>(addr & 0xFFFFF);
+
+            // Serial Interface
+            else if (addr >= 0x04800000 && addr <= 0x048FFFFF)
+                return SI.Read<T>(addr & 0xFFFFF);
 
             // Cartridge Domain 1 Address 2 (ROM)
             else if (addr >= 0x10000000 && addr <= 0x1FBFFFFF)
@@ -86,6 +92,10 @@ namespace Chroma64.Emulator.Memory
             // RDRAM Interface
             else if (addr >= 0x04700000 && addr <= 0x047FFFFF)
                 RI.Write(addr & 0xFFFFF, val);
+
+            // Serial Interface
+            else if (addr >= 0x04800000 && addr <= 0x048FFFFF)
+                SI.Write(addr & 0xFFFFF, val);
 
             else
                 Log.CriticalError($"Write to unknown address 0x{addr:X8}");
