@@ -28,7 +28,7 @@ namespace Chroma64.Emulator.Memory
             SI = new SerialInterface();
             AI = new AudioInterface();
             PIFRAM = new PIFRAM();
-            VI = new VideoInterface();
+            VI = new VideoInterface(this);
         }
 
         public T Read<T>(ulong addr) where T : unmanaged

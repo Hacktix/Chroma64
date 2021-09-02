@@ -8,7 +8,7 @@ namespace Chroma64.Emulator.Memory
     {
         public ROM(string filePath) : base(File.ReadAllBytes(filePath))
         {
-            fixed (byte* romPtr = bytes)
+            fixed (byte* romPtr = Bytes)
             {
                 // Get 32 bit identifier and re-order bytes depending on value
                 uint formatIdent = *(uint*)romPtr;
@@ -21,7 +21,7 @@ namespace Chroma64.Emulator.Memory
 
                     // Byte-swapped format (BADC)
                     case 0x12408037:
-                        for (int i = 0; i < bytes.Length; i += 2)
+                        for (int i = 0; i < Bytes.Length; i += 2)
                         {
                             byte tmp = romPtr[i];
                             romPtr[i] = romPtr[i + 1];
@@ -32,7 +32,7 @@ namespace Chroma64.Emulator.Memory
 
                     // Little endian format (DCBA)
                     case 0x80371240:
-                        for (int i = 0; i < bytes.Length; i += 4)
+                        for (int i = 0; i < Bytes.Length; i += 4)
                         {
                             byte tmp = romPtr[i];
                             romPtr[i] = romPtr[i + 3];
@@ -51,11 +51,11 @@ namespace Chroma64.Emulator.Memory
                 }
 
                 // Reverse ROM byte array for BE-LE Mapping
-                Array.Reverse(bytes);
+                Array.Reverse(Bytes);
 
                 // Extra validation + logging
                 Log.Info($"Header: 0x{Read<uint>(0).ToString("X4")}");
-                if ((*(uint*)(romPtr + bytes.Length - 4)) != 0x80371240)
+                if ((*(uint*)(romPtr + Bytes.Length - 4)) != 0x80371240)
                     Log.FatalError("Invalid ROM File!");
 
                 Log.Info($"CRC1: 0x{Read<uint>(0x10):X8}");

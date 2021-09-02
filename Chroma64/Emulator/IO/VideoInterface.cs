@@ -1,4 +1,5 @@
-﻿using Chroma64.Emulator.Memory;
+﻿using Chroma.Graphics;
+using Chroma64.Emulator.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,12 @@ namespace Chroma64.Emulator.IO
 
     class VideoInterface : BigEndianMemory
     {
-        public VideoInterface() : base(0x38) { }
+        private MemoryBus bus;
+
+        public VideoInterface(MemoryBus bus) : base(0x38)
+        {
+            this.bus = bus;
+        }
 
         public new T Read<T>(ulong addr) where T : unmanaged
         {
@@ -55,6 +61,31 @@ namespace Chroma64.Emulator.IO
         public void SetRegister(VI reg, uint value)
         {
             base.Write((ulong)reg, value);
+        }
+
+        public bool NeedsRender()
+        {
+            return (GetRegister(VI.CONTROL_REG) & 0b11) == 3;
+        }
+
+        public void SetFramebuffer(ref Texture tex)
+        {
+            int width = (int)(GetRegister(VI.WIDTH_REG) & 0xFFF);
+            int yScale = (int)GetRegister(VI.Y_SCALE_REG);
+            int height = ((15 * yScale) / 64);
+
+            int origin = (int)(GetRegister(VI.DRAM_ADDR_REG) & 0x3FFFFF);
+            byte[] data = new byte[width * height * 4];
+            Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - origin - data.Length, data, 0, data.Length);
+            Array.Reverse(data);
+
+            int cnt = 0;
+            foreach (byte b in data)
+                cnt += b != 0 ? 1 : 0;
+
+            if (tex == null || tex.Width != width || tex.Height != height)
+                tex = new Texture(width, height, PixelFormat.RGBA);
+            tex.SetPixelData(data);
         }
     }
 }
