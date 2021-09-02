@@ -16,6 +16,9 @@ namespace Chroma64.Emulator.CPU
         private ulong pc = 0xA4000040;
         private ulong hilo;
 
+        private ulong breakpoint = 0x800001AC;
+        private bool debugging = false;
+
         private int lo
         {
             get { return (int)(hilo & 0xFFFFFFFF); }
@@ -106,6 +109,11 @@ namespace Chroma64.Emulator.CPU
                 { 43, MIPS_SLTU }, { 18, MIPS_MFLO },
             };
 
+            instrsRegimm = new Dictionary<uint, Action<uint>>()
+            {
+                { 17, MIPS_BGEZAL },
+            };
+
             instrsCop = new Dictionary<uint, Action<uint>>()
             {
                 { 4, MIPS_MTC0 },
@@ -116,6 +124,9 @@ namespace Chroma64.Emulator.CPU
         {
             for (int i = 0; i < cycles; i++)
             {
+                if ((pc & 0xFFFFFFFF) == breakpoint)
+                    debugging = true;
+
                 // Fetch & increment PC
                 uint instr = bus.Read<uint>(pc);
                 pc += 4;
@@ -141,12 +152,21 @@ namespace Chroma64.Emulator.CPU
 
         private void LogInstr(string instr, string msg)
         {
-            Log.Info($"[PC = 0x{(pc - 4) & 0xFFFFFFFF:X8}] {instr.PadRight(6)} : {msg}");
+            if (debugging)
+            {
+                Log.Info($"[PC = 0x{(pc - 4) & 0xFFFFFFFF:X8}] {instr.PadRight(6)} : {msg}");
+                var input = Console.ReadKey();
+                if (input.Key == ConsoleKey.Enter)
+                    debugging = false;
+            }
         }
 
         #region CPU Register Instructions
         private void SetReg(CPUREG reg, long value)
         {
+            if ((((ulong)value & 0xFFFFFFFF00000000) != 0) && (((ulong)value & 0xFFFFFFFF00000000) != 0xFFFFFFFF00000000))
+                debugging = true;
+
             if (reg != CPUREG.ZERO)
                 regs[(int)reg] = value;
         }
@@ -178,7 +198,7 @@ namespace Chroma64.Emulator.CPU
             else
             {
                 pc -= 4;
-                Log.FatalError($"Unimplemented Branch Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
             }
         }
 
@@ -441,9 +461,9 @@ namespace Chroma64.Emulator.CPU
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
             CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
             CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
-            long val1 = GetReg(op1);
-            long val2 = GetReg(op2);
-            long res = val1 + val2;
+            int val1 = (int)GetReg(op1);
+            int val2 = (int)GetReg(op2);
+            int res = val1 + val2;
             SetReg(dest, res);
 
             LogInstr("ADD", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
@@ -454,9 +474,9 @@ namespace Chroma64.Emulator.CPU
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
             CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
             CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
-            long val1 = GetReg(op1);
-            long val2 = GetReg(op2);
-            long res = val1 + val2;
+            int val1 = (int)GetReg(op1);
+            int val2 = (int)GetReg(op2);
+            int res = val1 + val2;
             SetReg(dest, res);
 
             LogInstr("ADDU", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
@@ -467,9 +487,9 @@ namespace Chroma64.Emulator.CPU
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
             CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
             CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
-            long val1 = GetReg(op1);
-            long val2 = GetReg(op2);
-            long res = val1 - val2;
+            int val1 = (int)GetReg(op1);
+            int val2 = (int)GetReg(op2);
+            int res = val1 - val2;
             SetReg(dest, res);
 
             LogInstr("SUBU", $"{op1} - {op2} -> {val1:X16} - {val2:X16} -> {res:X16} -> {dest}");
@@ -479,8 +499,8 @@ namespace Chroma64.Emulator.CPU
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
             CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            ulong val1 = (ulong)GetReg(op1);
-            ulong val2 = (ulong)GetReg(op2);
+            ulong val1 = (uint)GetReg(op1);
+            ulong val2 = (uint)GetReg(op2);
             ulong res = val1 * val2;
             hilo = res;
 
@@ -525,6 +545,27 @@ namespace Chroma64.Emulator.CPU
             LogInstr("MFLO", $"LO -> {val:X16} -> {dest}");
         }
         #endregion
+
+        #endregion
+
+        #region REGIMM Instructions
+
+        void MIPS_BGEZAL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val >= 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            SetReg(CPUREG.RA, (long)pc + 4);
+
+            LogInstr("BGEZAL", $"{src} >= 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
 
         #endregion
 

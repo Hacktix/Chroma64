@@ -61,6 +61,9 @@ namespace Chroma64.Emulator.Memory
                 Log.Info($"Header: 0x{Read<uint>(0).ToString("X4")}");
                 if ((*(uint*)(romPtr + bytes.Length - 4)) != 0x80371240)
                     Log.FatalError("Invalid ROM File!");
+
+                Log.Info($"CRC1: 0x{Read<uint>(0x10):X8}");
+                Log.Info($"CRC2: 0x{Read<uint>(0x14):X8}");
             }
         }
     }
