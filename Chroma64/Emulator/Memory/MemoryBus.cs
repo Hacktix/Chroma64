@@ -11,6 +11,7 @@ namespace Chroma64.Emulator.Memory
 
         public RDRAMInterface RI;
         public PeripheralInterface PI;
+        public MIPSInterface MI;
 
         public ROM ROM;
 
@@ -19,6 +20,7 @@ namespace Chroma64.Emulator.Memory
             ROM = rom;
             RI = new RDRAMInterface();
             PI = new PeripheralInterface(this);
+            MI = new MIPSInterface();
         }
 
         public T Read<T>(ulong addr) where T : unmanaged
@@ -36,6 +38,10 @@ namespace Chroma64.Emulator.Memory
             // SP IMEM
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 return SP_IMEM.Read<T>(addr & 0xFFF);
+
+            // MIPS Interface
+            else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
+                return MI.Read<T>(addr & 0xFFFFF);
 
             // Peripheral Interface
             else if (addr >= 0x04600000 && addr <= 0x046FFFFF)
@@ -68,6 +74,10 @@ namespace Chroma64.Emulator.Memory
             // SP IMEM
             else if (addr >= 0x04001000 && addr <= 0x04001FFF)
                 SP_IMEM.Write(addr & 0xFFF, val);
+
+            // MIPS Interface
+            else if (addr >= 0x04300000 && addr <= 0x043FFFFF)
+                MI.Write(addr & 0xFFFFF, val);
 
             // Peripheral Interface
             else if (addr >= 0x04600000 && addr <= 0x046FFFFF)
