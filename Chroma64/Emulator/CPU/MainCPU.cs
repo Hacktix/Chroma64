@@ -143,6 +143,8 @@ namespace Chroma64.Emulator.CPU
                         Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
                     }
                 }
+                else
+                    LogInstr("NOP", "-");
 
                 // Handle queued branches
                 if (branchQueued > 0 && --branchQueued == 0)
