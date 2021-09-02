@@ -44,7 +44,7 @@ namespace Chroma64.Emulator.Memory
                 return SP_IMEM.Read<T>(addr & 0xFFF);
 
             // TODO: SP Registers
-            else if(addr >= 0x04040000 && addr <= 0x040FFFFF)
+            else if (addr >= 0x04040000 && addr <= 0x040FFFFF)
             {
                 Log.Warning($"Unimplemented read from SP Register @ 0x{addr:X8}");
                 return default;

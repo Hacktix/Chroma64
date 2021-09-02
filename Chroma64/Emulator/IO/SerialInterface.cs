@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 
 namespace Chroma64.Emulator.IO
 {
-    public enum SI {
+    public enum SI
+    {
         BASE_REG = 0x00,
         DRAM_ADDR_REG = 0x00,
         PIF_ADDR_RD64B_REG = 0x04,
