@@ -60,7 +60,7 @@ namespace Chroma64.Emulator.CPU
                 { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
 
                 // Branch Instructions
-                { 5, MIPS_BNE },
+                { 5, MIPS_BNE }, { 21, MIPS_BNEL },
 
                 // Load Instructions
                 { 15, MIPS_LUI }, { 35, MIPS_LW },
@@ -72,7 +72,7 @@ namespace Chroma64.Emulator.CPU
                 { 9, MIPS_ADDIU }, { 8, MIPS_ADDI },
 
                 // Bitwise Operations
-                { 13, MIPS_ORI },
+                { 13, MIPS_ORI }, { 12, MIPS_ANDI },
 
                 // Misc.
                 { 47, MIPS_CACHE },
@@ -82,6 +82,9 @@ namespace Chroma64.Emulator.CPU
             {
                 // Bitwise Operations
                 { 36, MIPS_AND }, { 37, MIPS_OR },
+
+                // Arithmetic Operations
+                { 32, MIPS_ADD },
 
                 // Control Flow
                 { 8, MIPS_JR },
@@ -200,7 +203,28 @@ namespace Chroma64.Emulator.CPU
                 branchTarget = addr;
             }
 
-            LogInstr("BNE", $"{src} == {dest} -> {val1:X16} == {val2:X16} -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+            LogInstr("BNE", $"{src} == {dest} -> {val1:X16} != {val2:X16} -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
+        void MIPS_BNEL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val1 = GetReg(src);
+            long val2 = GetReg(dest);
+            bool cond = val1 != val2;
+
+            LogInstr("BNEL", $"{src} == {dest} -> {val1:X16} != {val2:X16} -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
         }
 
         #endregion
@@ -286,6 +310,17 @@ namespace Chroma64.Emulator.CPU
             LogInstr("ORI", $"{src} -> {regval:X16} | {val:X16} -> {regval | val:X16} -> {dest}");
         }
 
+        void MIPS_ANDI(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong val = (ushort)(instr & 0xFFFF);
+            ulong regval = (ulong)GetReg(src);
+            SetReg(dest, (long)(regval & val));
+
+            LogInstr("ANDI", $"{src} -> {regval:X16} & {val:X16} -> {regval & val:X16} -> {dest}");
+        }
+
         #endregion
 
         #region Misc.
@@ -327,6 +362,23 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("OR", $"{op1} | {op2} -> {val1:X16} | {val2:X16} -> {res:X16} -> {dest}");
         }
+        #endregion
+
+        #region Arithmetic Operations
+
+        void MIPS_ADD(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val1 = GetReg(op1);
+            long val2 = GetReg(op2);
+            long res = val1 + val2;
+            SetReg(dest, res);
+
+            LogInstr("ADD", $"{op1} & {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
+        }
+
         #endregion
 
         #region Control Flow
