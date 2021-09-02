@@ -14,6 +14,19 @@ namespace Chroma64.Emulator.CPU
     {
         private long[] regs = new long[32];
         private ulong pc = 0xA4000040;
+        private ulong hilo;
+
+        private int lo
+        {
+            get { return (int)(hilo & 0xFFFFFFFF); }
+            set { hilo = (hilo & 0xFFFFFFFF00000000) | (uint)value; }
+        }
+
+        private int hi
+        {
+            get { return (int)((hilo & 0xFFFFFFFF00000000) >> 32); }
+            set { hilo = (hilo & 0xFFFFFFFF) | (((uint)value) << 32); }
+        }
 
         private COP0 cop0 = new COP0();
         private MemoryBus bus;
@@ -84,7 +97,7 @@ namespace Chroma64.Emulator.CPU
                 { 36, MIPS_AND }, { 37, MIPS_OR },
 
                 // Arithmetic Operations
-                { 32, MIPS_ADD },
+                { 32, MIPS_ADD }, { 25, MIPS_MULTU },
 
                 // Control Flow
                 { 8, MIPS_JR },
@@ -376,7 +389,19 @@ namespace Chroma64.Emulator.CPU
             long res = val1 + val2;
             SetReg(dest, res);
 
-            LogInstr("ADD", $"{op1} & {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
+            LogInstr("ADD", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_MULTU(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            uint val1 = (uint)(ulong)GetReg(op1);
+            uint val2 = (uint)(ulong)GetReg(op2);
+            ulong res = val1 * val2;
+            hilo = res;
+
+            LogInstr("MULTU", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> {res:X16} -> HILO");
         }
 
         #endregion
