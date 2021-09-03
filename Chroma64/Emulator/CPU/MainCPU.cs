@@ -11,6 +11,11 @@ namespace Chroma64.Emulator.CPU
         ZERO, AT, V0, V1, A0, A1, A2, A3, T0, T1, T2, T3, T4, T5, T6, T7, S0, S1, S2, S3, S4, S5, S6, S7, T8, T9, K0, K1, GP, SP, S8, RA
     }
 
+    public enum InstructionType
+    {
+        Normal, Special, REGIMM, COP
+    }
+
     class MainCPU
     {
         private long[] regs = new long[32];
@@ -115,8 +120,7 @@ namespace Chroma64.Emulator.CPU
         {
             for (int i = 0; i < cycles; i++)
             {
-                if ((pc & 0xFFFFFFFF) == breakpoint)
-                    debugging = true;
+                CheckBreakpoint();
 
                 // Fetch & increment PC
                 uint instr = bus.Read<uint>(pc);
@@ -126,13 +130,8 @@ namespace Chroma64.Emulator.CPU
                 if (instr != 0)
                 {
                     uint opcode = (instr & 0xFC000000) >> 26;
-                    if (instrs.ContainsKey(opcode))
-                        instrs[opcode](instr);
-                    else
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
+                    CheckInstructionImplemented(instr, opcode, InstructionType.Normal);
+                    instrs[opcode](instr);
                 }
                 else
                     LogInstr("NOP", "-");
@@ -155,6 +154,50 @@ namespace Chroma64.Emulator.CPU
             }
         }
 
+        [Conditional("DEBUG")]
+        private void CheckBreakpoint()
+        {
+            if ((pc & 0xFFFFFFFF) == breakpoint)
+                debugging = true;
+        }
+
+        [Conditional("DEBUG")]
+        private void CheckInstructionImplemented(uint instr, uint opcode, InstructionType type)
+        {
+            switch(type)
+            {
+                case InstructionType.Normal:
+                    if (!instrs.ContainsKey(opcode))
+                    {
+                        pc -= 4;
+                        Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    }
+                    break;
+                case InstructionType.Special:
+                    if (!instrsSpecial.ContainsKey(opcode))
+                    {
+                        pc -= 4;
+                        Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    }
+                    break;
+                case InstructionType.REGIMM:
+                    if (!instrsRegimm.ContainsKey(opcode))
+                    {
+                        pc -= 4;
+                        Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    }
+                    break;
+                case InstructionType.COP:
+                    if (!instrsCop.ContainsKey(opcode))
+                    {
+                        pc -= 4;
+                        Log.FatalError($"Unimplemented Coprocessor Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    }
+                    break;
+            }
+            
+        }
+
         #region CPU Register Instructions
         private void SetReg(CPUREG reg, long value)
         {
@@ -175,37 +218,22 @@ namespace Chroma64.Emulator.CPU
         private void InstrSpecial(uint instr)
         {
             uint opcode = instr & 0x3F;
-            if (instrsSpecial.ContainsKey(opcode))
-                instrsSpecial[opcode](instr);
-            else
-            {
-                pc -= 4;
-                Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-            }
+            CheckInstructionImplemented(instr, opcode, InstructionType.Special);
+            instrsSpecial[opcode](instr);
         }
 
         private void InstrRegimm(uint instr)
         {
             uint opcode = (instr & 0x1F0000) >> 16;
-            if (instrsRegimm.ContainsKey(opcode))
-                instrsRegimm[opcode](instr);
-            else
-            {
-                pc -= 4;
-                Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-            }
+            CheckInstructionImplemented(instr, opcode, InstructionType.REGIMM);
+            instrsRegimm[opcode](instr);
         }
 
         private void InstrCop(uint instr)
         {
             uint opcode = (instr & 0x3E00000) >> 21;
-            if (instrsCop.ContainsKey(opcode))
-                instrsCop[opcode](instr);
-            else
-            {
-                pc -= 4;
-                Log.FatalError($"Unimplemented Coprocessor Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-            }
+            CheckInstructionImplemented(instr, opcode, InstructionType.COP);
+            instrsCop[opcode](instr);
         }
         #endregion
 
