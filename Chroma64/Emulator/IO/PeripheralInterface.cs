@@ -1,5 +1,6 @@
 ﻿using Chroma64.Emulator.Memory;
 using Chroma64.Util;
+using System;
 
 namespace Chroma64.Emulator.IO
 {
@@ -45,14 +46,14 @@ namespace Chroma64.Emulator.IO
             if (addr >= (ulong)PI.WR_LEN_REG && addr < (ulong)(PI.WR_LEN_REG + 3))
             {
                 base.Write<T>(addr, val);
-                ulong destAddr = GetRegister(PI.DRAM_ADDR_REG) & 0x7FFFFF;
-                ulong srcAddr = (GetRegister(PI.CART_ADDR_REG) & 0xFFFFFFFF) - 0x10000000;
-                ulong len = (GetRegister(PI.WR_LEN_REG) & 0x7FFFFF) + 1;
+                int destAddr = (int)(GetRegister(PI.DRAM_ADDR_REG) & 0x7FFFFF);
+                int srcAddr = (int)((GetRegister(PI.CART_ADDR_REG) & 0xFFFFFFFF) - 0x10000000);
+                int len = (int)((GetRegister(PI.WR_LEN_REG) & 0x7FFFFF) + 1);
 
-                for (ulong i = 0; i < len; i += sizeof(ulong))
-                    bus.RDRAM.Write(destAddr + i, bus.ROM.Read<ulong>(srcAddr + i));
+                Array.Copy(bus.ROM.Bytes, bus.ROM.Bytes.Length - srcAddr - len,
+                    bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - destAddr - len, len);
 
-                Log.Info($"PI DMA from {srcAddr:X8} to {destAddr:X8} with length {len:X}");
+                Log.Info($"PI DMA from ROM:{srcAddr:X8} to RDRAM:{destAddr:X8} with length {len:X}");
                 return;
             }
 
