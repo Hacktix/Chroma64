@@ -132,7 +132,7 @@ namespace Chroma64.Emulator.CPU
                 // Decode opcode & execute
                 if (instr != 0)
                 {
-                    if(instr == 0b01000010000000000000000000011000)
+                    if (instr == 0x42000018)
                         MIPS_ERET();
                     else
                     {
@@ -1002,12 +1002,12 @@ namespace Chroma64.Emulator.CPU
         void MIPS_ERET()
         {
             long sr = cop0.GetReg(COP0REG.Status);
-            if((sr & 0b100) != 0)
+            if ((sr & 0b100) != 0)
             {
                 sr &= ~(0b100);
                 cop0.SetReg(COP0REG.Status, sr);
                 pc = (ulong)cop0.GetReg(COP0REG.ErrorEPC);
-            } 
+            }
             else
             {
                 sr &= ~(0b10);
