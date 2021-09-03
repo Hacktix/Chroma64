@@ -28,6 +28,7 @@ namespace Chroma64.Emulator.CPU
         private bool debugging = false;
 
         private COP0 cop0 = new COP0();
+        private COP1 cop1 = new COP1();
         private MemoryBus bus;
 
         private Dictionary<uint, Action<uint>> instrs = new Dictionary<uint, Action<uint>>();
@@ -72,47 +73,49 @@ namespace Chroma64.Emulator.CPU
                 { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
 
                 // Branch Instructions
-                { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ },
+                { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 6, MIPS_BLEZ }, { 20, MIPS_BEQL }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ },
 
                 // Load Instructions
-                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 35, MIPS_LW }, { 55, MIPS_LD },
+                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 55, MIPS_LD },
 
                 // Store Instructions
-                { 40, MIPS_SB }, { 43, MIPS_SW }, { 63, MIPS_SD },
+                { 40, MIPS_SB }, { 41, MIPS_SH }, { 43, MIPS_SW }, { 63, MIPS_SD },
 
                 // Arithmetic Operations
                 { 9, MIPS_ADDIU }, { 8, MIPS_ADDI }, { 24, MIPS_DADDI },
 
                 // Bitwise Operations
-                { 13, MIPS_ORI }, { 12, MIPS_ANDI },
+                { 13, MIPS_ORI }, { 12, MIPS_ANDI }, { 14, MIPS_XORI },
 
                 // Misc.
-                { 47, MIPS_CACHE },
+                { 47, MIPS_CACHE }, { 10, MIPS_SLTI }, { 11, MIPS_SLTIU },
             };
 
             instrsSpecial = new Dictionary<uint, Action<uint>>()
             {
                 // Bitwise Operations
-                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 2, MIPS_SRL }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV },
+                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 2, MIPS_SRL }, { 3, MIPS_SRA }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV },
 
                 // Arithmetic Operations
-                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 44, MIPS_DADD },
+                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 27, MIPS_DIVU }, { 44, MIPS_DADD },
 
                 // Control Flow
                 { 8, MIPS_JR },
 
                 // Misc.
-                { 43, MIPS_SLTU }, { 18, MIPS_MFLO }, { 16, MIPS_MFHI },
+                { 42, MIPS_SLT }, { 43, MIPS_SLTU }, { 18, MIPS_MFLO }, { 16, MIPS_MFHI }, { 19, MIPS_MTLO }, { 17, MIPS_MTHI },
             };
 
             instrsRegimm = new Dictionary<uint, Action<uint>>()
             {
-                { 17, MIPS_BGEZAL },
+                { 1, MIPS_BGEZ }, { 17, MIPS_BGEZAL },
             };
 
             instrsCop = new Dictionary<uint, Action<uint>>()
             {
-                { 0, MIPS_MFC0 }, { 4, MIPS_MTC0 },
+                { 0, MIPS_MFC0 }, { 4, MIPS_MTC0 }, { 2, MIPS_CFC1 }, { 6, MIPS_CTC1 },
+
+                { 16, MIPS_TLBWI },
             };
         }
 
@@ -129,9 +132,14 @@ namespace Chroma64.Emulator.CPU
                 // Decode opcode & execute
                 if (instr != 0)
                 {
-                    uint opcode = (instr & 0xFC000000) >> 26;
-                    CheckInstructionImplemented(instr, opcode, InstructionType.Normal);
-                    instrs[opcode](instr);
+                    if (instr == 0x42000018)
+                        MIPS_ERET();
+                    else
+                    {
+                        uint opcode = (instr & 0xFC000000) >> 26;
+                        CheckInstructionImplemented(instr, opcode, InstructionType.Normal);
+                        instrs[opcode](instr);
+                    }
                 }
                 else
                     LogInstr("NOP", "-");
@@ -142,6 +150,7 @@ namespace Chroma64.Emulator.CPU
             }
         }
 
+        #region Debug Methods
         [Conditional("DEBUG")]
         private void LogInstr(string instr, string msg)
         {
@@ -197,13 +206,11 @@ namespace Chroma64.Emulator.CPU
             }
 
         }
+        #endregion
 
         #region CPU Register Instructions
         private void SetReg(CPUREG reg, long value)
         {
-            if ((((ulong)value & 0xFFFFFFFF00000000) != 0) && (((ulong)value & 0xFFFFFFFF00000000) != 0xFFFFFFFF00000000))
-                debugging = true;
-
             if (reg != CPUREG.ZERO)
                 regs[(int)reg] = value;
         }
@@ -280,6 +287,27 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BEQ", $"{src} == {dest} -> {val1:X16} == {val2:X16} -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
+        void MIPS_BEQL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val1 = GetReg(src);
+            long val2 = GetReg(dest);
+            bool cond = val1 == val2;
+
+            LogInstr("BEQL", $"{src} == {dest} -> {val1:X16} == {val2:X16} -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
+        }
+
         void MIPS_BNE(uint instr)
         {
             CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -335,6 +363,22 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BGTZ", $"{src} > 0 -> {val:X16} > 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
+        void MIPS_BLEZ(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val <= 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+
+            LogInstr("BLEZ", $"{src} <= 0 -> {val:X16} <= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
         #endregion
 
         #region Load Instructions
@@ -372,6 +416,32 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, val);
 
             LogInstr("LB", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X2} -> {dest}");
+        }
+
+        void MIPS_LH(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            short val = bus.Read<short>(addr);
+            SetReg(dest, val);
+
+            LogInstr("LH", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X4} -> {dest}");
+        }
+
+        void MIPS_LHU(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            ushort val = bus.Read<ushort>(addr);
+            SetReg(dest, val);
+
+            LogInstr("LHU", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X4} -> {dest}");
         }
 
         void MIPS_LW(uint instr)
@@ -415,6 +485,19 @@ namespace Chroma64.Emulator.CPU
             bus.Write(addr, val);
 
             LogInstr("SB", $"{src} -> {val:X2} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
+
+        void MIPS_SH(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(dest);
+            ulong addr = (ulong)(baseAddr + offset);
+            short val = (short)GetReg(src);
+            bus.Write(addr, val);
+
+            LogInstr("SH", $"{src} -> {val:X4} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
         void MIPS_SW(uint instr)
@@ -506,6 +589,16 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("ANDI", $"{src} -> {regval:X16} & {val:X16} -> {regval & val:X16} -> {dest}");
         }
+        void MIPS_XORI(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong val = (ushort)(instr & 0xFFFF);
+            ulong regval = (ulong)GetReg(src);
+            SetReg(dest, (long)(regval ^ val));
+
+            LogInstr("XORI", $"{src} -> {regval:X16} | {val:X16} -> {regval ^ val:X16} -> {dest}");
+        }
 
         #endregion
 
@@ -514,6 +607,30 @@ namespace Chroma64.Emulator.CPU
         void MIPS_CACHE(uint instr)
         {
             LogInstr("CACHE", $"Not yet implemented.");
+        }
+
+        void MIPS_SLTI(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long cp1 = GetReg(src);
+            long cp2 = (short)(instr & 0xFFFF);
+            long val = cp1 < cp2 ? 1 : 0;
+            SetReg(dest, val);
+
+            LogInstr("SLTI", $"{src} < {cp2:X16} -> {cp1:X16} < {cp2:X16} -> {val} -> {dest}");
+        }
+
+        void MIPS_SLTIU(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong cp1 = (ulong)GetReg(src);
+            ulong cp2 = (ulong)(short)(instr & 0xFFFF);
+            long val = cp1 < cp2 ? 1 : 0;
+            SetReg(dest, val);
+
+            LogInstr("SLTIU", $"{src} < {cp2:X16} -> {cp1:X16} < {cp2:X16} -> {val} -> {dest}");
         }
 
         #endregion
@@ -572,6 +689,18 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, res);
 
             LogInstr("SRL", $"{src} >> {shift} -> {val:X16} >> {shift:X} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_SRA(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            int val = (int)GetReg(src);
+            int shift = (int)(instr & (0x1F << 6)) >> 6;
+            long res = val >> shift;
+            SetReg(dest, res);
+
+            LogInstr("SRA", $"{src} >> {shift} -> {val:X16} >> {shift:X} -> {res:X16} -> {dest}");
         }
 
         void MIPS_SRLV(uint instr)
@@ -684,6 +813,20 @@ namespace Chroma64.Emulator.CPU
             LogInstr("MULT", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
         }
 
+        void MIPS_DIVU(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong val1 = (uint)GetReg(op1);
+            ulong val2 = (uint)GetReg(op2);
+            long resLo = (long)(val1 / val2);
+            long resHi = (long)(val1 % val2);
+            lo = resLo;
+            hi = resHi;
+
+            LogInstr("DIVU", $"{op1} / {op2} -> {val1:X8} / {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
+        }
+
         void MIPS_DADD(uint instr)
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -713,6 +856,20 @@ namespace Chroma64.Emulator.CPU
         #endregion
 
         #region Misc.
+
+        void MIPS_SLT(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG target = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long cp1 = GetReg(src);
+            long cp2 = GetReg(target);
+            long val = cp1 < cp2 ? 1 : 0;
+            SetReg(dest, val);
+
+            LogInstr("SLT", $"{src} < {target} -> {cp1:X16} < {cp2:X16} -> {val} -> {dest}");
+        }
+
         void MIPS_SLTU(uint instr)
         {
             CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -743,11 +900,45 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("MFHI", $"HI -> {val:X16} -> {dest}");
         }
+
+        void MIPS_MTLO(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            long val = GetReg(src);
+            lo = val;
+
+            LogInstr("MTLO", $"{src} -> {val:X16} -> LO");
+        }
+
+        void MIPS_MTHI(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            long val = GetReg(src);
+            hi = val;
+
+            LogInstr("MTHI", $"{src} -> {val:X16} -> HI");
+        }
         #endregion
 
         #endregion
 
         #region REGIMM Instructions
+
+        void MIPS_BGEZ(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val >= 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+
+            LogInstr("BGEZ", $"{src} >= 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
 
         void MIPS_BGEZAL(uint instr)
         {
@@ -785,6 +976,49 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, cop0.GetReg(src));
 
             LogInstr("MFC0", $"{src} -> {cop0.GetReg(src):X16} -> {dest}");
+        }
+
+        void MIPS_CTC1(uint instr)
+        {
+            uint fcr = (instr & (0x1F << 11)) >> 11;
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = GetReg(src);
+            if (fcr == 31)
+                cop1.FCR31 = (int)val;
+
+            LogInstr("CTC1", $"{src} -> {val:X16} -> FCR{fcr}");
+        }
+
+        void MIPS_CFC1(uint instr)
+        {
+            uint fcr = (instr & (0x1F << 11)) >> 11;
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = fcr == 0 ? default : cop1.FCR31;
+            SetReg(dest, val);
+
+            LogInstr("CFC1", $"FCR{fcr} -> {val:X16} -> {dest}");
+        }
+
+        void MIPS_ERET()
+        {
+            long sr = cop0.GetReg(COP0REG.Status);
+            if ((sr & 0b100) != 0)
+            {
+                sr &= ~(0b100);
+                cop0.SetReg(COP0REG.Status, sr);
+                pc = (ulong)cop0.GetReg(COP0REG.ErrorEPC);
+            }
+            else
+            {
+                sr &= ~(0b10);
+                cop0.SetReg(COP0REG.Status, sr);
+                pc = (ulong)cop0.GetReg(COP0REG.EPC);
+            }
+        }
+
+        void MIPS_TLBWI(uint instr)
+        {
+            LogInstr("TLBWI", "Not yet implemented.");
         }
         #endregion
 
