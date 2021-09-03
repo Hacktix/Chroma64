@@ -91,13 +91,13 @@ namespace Chroma64.Emulator.CPU
                 { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 2, MIPS_SRL }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV },
 
                 // Arithmetic Operations
-                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 44, MIPS_DADD },
+                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 44, MIPS_DADD },
 
                 // Control Flow
                 { 8, MIPS_JR },
 
                 // Misc.
-                { 43, MIPS_SLTU }, { 18, MIPS_MFLO },
+                { 43, MIPS_SLTU }, { 18, MIPS_MFLO }, { 16, MIPS_MFHI },
             };
 
             instrsRegimm = new Dictionary<uint, Action<uint>>()
@@ -641,6 +641,21 @@ namespace Chroma64.Emulator.CPU
             LogInstr("MULTU", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
         }
 
+        void MIPS_MULT(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val1 = (int)GetReg(op1);
+            long val2 = (int)GetReg(op2);
+            long res = val1 * val2;
+            long resLo = (int)res;
+            long resHi = (int)(res >> 32);
+            lo = resLo;
+            hi = resHi;
+
+            LogInstr("MULT", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
+        }
+
         void MIPS_DADD(uint instr)
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -690,6 +705,15 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, val);
 
             LogInstr("MFLO", $"LO -> {val:X16} -> {dest}");
+        }
+
+        void MIPS_MFHI(uint instr)
+        {
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val = hi;
+            SetReg(dest, val);
+
+            LogInstr("MFHI", $"HI -> {val:X16} -> {dest}");
         }
         #endregion
 
