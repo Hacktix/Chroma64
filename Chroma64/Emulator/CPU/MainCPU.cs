@@ -164,7 +164,7 @@ namespace Chroma64.Emulator.CPU
         [Conditional("DEBUG")]
         private void CheckInstructionImplemented(uint instr, uint opcode, InstructionType type)
         {
-            switch(type)
+            switch (type)
             {
                 case InstructionType.Normal:
                     if (!instrs.ContainsKey(opcode))
@@ -195,7 +195,7 @@ namespace Chroma64.Emulator.CPU
                     }
                     break;
             }
-            
+
         }
 
         #region CPU Register Instructions
