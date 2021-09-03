@@ -107,7 +107,7 @@ namespace Chroma64.Emulator.CPU
 
             instrsCop = new Dictionary<uint, Action<uint>>()
             {
-                { 4, MIPS_MTC0 },
+                { 0, MIPS_MFC0 }, { 4, MIPS_MTC0 },
             };
         }
 
@@ -748,6 +748,15 @@ namespace Chroma64.Emulator.CPU
             cop0.SetReg(dest, GetReg(src));
 
             LogInstr("MTC0", $"{src} -> {GetReg(src):X16} -> {dest}");
+        }
+
+        void MIPS_MFC0(uint instr)
+        {
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            COP0REG src = (COP0REG)((instr & (0x1F << 11)) >> 11);
+            SetReg(dest, cop0.GetReg(src));
+
+            LogInstr("MFC0", $"{src} -> {cop0.GetReg(src):X16} -> {dest}");
         }
         #endregion
 
