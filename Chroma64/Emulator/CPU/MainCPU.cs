@@ -2,6 +2,7 @@
 using Chroma64.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Chroma64.Emulator.CPU
 {
@@ -142,6 +143,7 @@ namespace Chroma64.Emulator.CPU
             }
         }
 
+        [Conditional("DEBUG")]
         private void LogInstr(string instr, string msg)
         {
             if (debugging)
