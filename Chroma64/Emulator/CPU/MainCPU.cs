@@ -76,7 +76,7 @@ namespace Chroma64.Emulator.CPU
                 { 40, MIPS_SB }, { 43, MIPS_SW }, { 63, MIPS_SD },
 
                 // Arithmetic Operations
-                { 9, MIPS_ADDIU }, { 8, MIPS_ADDI },
+                { 9, MIPS_ADDIU }, { 8, MIPS_ADDI }, { 24, MIPS_DADDI },
 
                 // Bitwise Operations
                 { 13, MIPS_ORI }, { 12, MIPS_ANDI },
@@ -91,7 +91,7 @@ namespace Chroma64.Emulator.CPU
                 { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 2, MIPS_SRL }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV },
 
                 // Arithmetic Operations
-                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU },
+                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 44, MIPS_DADD },
 
                 // Control Flow
                 { 8, MIPS_JR },
@@ -425,12 +425,25 @@ namespace Chroma64.Emulator.CPU
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = (short)(instr & 0xFFFF);
             long regval = GetReg(src);
-            SetReg(dest, regval + val);
+            int res = (int)(regval + val);
+            SetReg(dest, res);
 
-            LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
+            LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {res:X16} -> {dest}");
         }
 
         void MIPS_ADDI(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = (short)(instr & 0xFFFF);
+            long regval = GetReg(src);
+            int res = (int)(regval + val);
+            SetReg(dest, res);
+
+            LogInstr("ADDI", $"{src} -> {regval:X16} + {val:X16} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_DADDI(uint instr)
         {
             CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
@@ -626,6 +639,19 @@ namespace Chroma64.Emulator.CPU
             hi = resHi;
 
             LogInstr("MULTU", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
+        }
+
+        void MIPS_DADD(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val1 = GetReg(op1);
+            long val2 = GetReg(op2);
+            long res = val1 + val2;
+            SetReg(dest, res);
+
+            LogInstr("DADD", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
         }
 
         #endregion
