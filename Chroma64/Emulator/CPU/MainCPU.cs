@@ -206,50 +206,6 @@ namespace Chroma64.Emulator.CPU
             }
 
         }
-
-        #region CPU Register Instructions
-        private void SetReg(CPUREG reg, long value)
-        {
-            if ((pc & 0xFFFFFFFF) == breakpoint)
-                debugging = true;
-        }
-
-        [Conditional("DEBUG")]
-        private void CheckInstructionImplemented(uint instr, uint opcode, InstructionType type)
-        {
-            switch (type)
-            {
-                case InstructionType.Normal:
-                    if (!instrs.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
-                case InstructionType.Special:
-                    if (!instrsSpecial.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
-                case InstructionType.REGIMM:
-                    if (!instrsRegimm.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
-                case InstructionType.COP:
-                    if (!instrsCop.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented Coprocessor Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
-            }
-
-        }
         #endregion
 
         #region CPU Register Instructions
