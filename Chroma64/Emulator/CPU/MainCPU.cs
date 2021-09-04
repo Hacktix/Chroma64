@@ -1147,6 +1147,15 @@ namespace Chroma64.Emulator.CPU
             LogInstr("MTC0", $"{src} -> {GetReg(src):X16} -> {dest}");
         }
 
+        void MIPS_MTC1(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 11)) >> 11);
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            COP1.SetFGR(dest, GetReg(src));
+
+            LogInstr("MTC1", $"{src} -> {GetReg(src):X16} -> {dest}");
+        }
+
         void MIPS_MFC0(uint instr)
         {
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
