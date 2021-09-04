@@ -1210,11 +1210,9 @@ namespace Chroma64.Emulator.CPU
             switch (fmt)
             {
                 case 0b10001:
-                    Log.Info($"ADD.D - {instr:X8} : {COP1.GetFGR<double>(op1)} + {COP1.GetFGR<double>(op2)}");
                     COP1.ADD_D(op1, op2, dest);
                     break;
                 case 0b10000:
-                    Log.Info($"ADD.S - {COP1.GetFGR<float>(op1)} + {COP1.GetFGR<float>(op2)}");
                     COP1.ADD_S(op1, op2, dest);
                     break;
             }
