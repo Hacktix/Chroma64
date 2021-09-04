@@ -33,6 +33,7 @@ namespace Chroma64.Emulator.CPU
         private Dictionary<uint, Action<uint>> instrsTLB = new Dictionary<uint, Action<uint>>();
         private Dictionary<uint, Action<uint>> instrsCOP1 = new Dictionary<uint, Action<uint>>();
         private Dictionary<uint, Action<uint>> instrsFPU = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsFPUBranch = new Dictionary<uint, Action<uint>>();
         private Dictionary<uint, Action<uint>> instrsCOPz = new Dictionary<uint, Action<uint>>();
 
         // Branch Instruction Variables
@@ -133,6 +134,13 @@ namespace Chroma64.Emulator.CPU
             {
                 { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_W_FMT },
                 { 5, MIPS_ABS_FMT }, { 0, MIPS_ADD_FMT }, { 3, MIPS_DIV_FMT },
+            };
+            for (uint i = 0b110000; i < 0x3F; i++)
+                instrsFPU.Add(i, MIPS_C_COND_FMT);
+
+            instrsFPUBranch = new Dictionary<uint, Action<uint>>()
+            {
+                { 0, MIPS_BC1F }, { 1, MIPS_BC1T },
             };
         }
 
@@ -242,8 +250,17 @@ namespace Chroma64.Emulator.CPU
                 }
                 else
                 {
-                    CheckInstructionImplemented(instr, maybeOp, instrsCOP1);
-                    instrsCOP1[maybeOp](instr);
+                    if(maybeOp == 0b01000)
+                    {
+                        uint fpuBranchOpcode = (instr & (0x3F << 16)) >> 16;
+                        CheckInstructionImplemented(instr, fpuBranchOpcode, instrsFPUBranch);
+                        instrsFPUBranch[fpuBranchOpcode](instr);
+                    }
+                    else
+                    {
+                        CheckInstructionImplemented(instr, maybeOp, instrsCOP1);
+                        instrsCOP1[maybeOp](instr);
+                    }
                 }
             }
             else if (cop == 0b010000)
@@ -1252,6 +1269,63 @@ namespace Chroma64.Emulator.CPU
                     COP1.DIV_S(op1, op2, dest);
                     break;
             }
+        }
+
+        void MIPS_C_COND_FMT(uint instr)
+        {
+            int cond = (int)(instr & 0xF);
+            int op1 = (int)((instr & (0x1F << 11)) >> 11);
+            int op2 = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch(cond)
+            {
+                case 0xE:
+                    switch (fmt)
+                    {
+                        case 0b10001:
+                            COP1.C_LE_D(op1, op2);
+                            break;
+                        case 0b10000:
+                            COP1.C_LE_S(op1, op2);
+                            break;
+                    }
+                    break;
+                default:
+                    Log.FatalError($"C.cond.fmt : Unimplemented condition {cond:X1} in instruction {instr:X8}");
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region FPU Branch Instructions
+
+        void MIPS_BC1T(uint instr)
+        {
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            bool cond = COP1.GetCondition();
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+
+            LogInstr("BC1T", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
+        void MIPS_BC1F(uint instr)
+        {
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            bool cond = !COP1.GetCondition();
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+
+            LogInstr("BC1F", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
         #endregion

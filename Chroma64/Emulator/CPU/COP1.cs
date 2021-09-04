@@ -115,6 +115,19 @@ namespace Chroma64.Emulator.CPU
             }
         }
 
+        public void SetCondition(bool value)
+        {
+            if (value)
+                fcr31 |= 1 << 23;
+            else
+                fcr31 &= ~(1 << 23);
+        }
+
+        public bool GetCondition()
+        {
+            return (fcr31 & (1 << 23)) != 0;
+        }
+
         #region CVT Instructions
 
         // CVT.D.fmt
@@ -155,6 +168,14 @@ namespace Chroma64.Emulator.CPU
 
         public void DIV_D(int op1, int op2, int dest) { SetFGR(dest, GetFGR<double>(op1) / GetFGR<double>(op2)); }
         public void DIV_S(int op1, int op2, int dest) { SetFGR(dest, GetFGR<float>(op1) / GetFGR<float>(op2)); }
+
+        #endregion
+
+        #region Compare Instructions
+
+        // C.LE.fmt
+        public void C_LE_D(int op1, int op2) { SetCondition(GetFGR<double>(op1) <= GetFGR<double>(op2)); }
+        public void C_LE_S(int op1, int op2) { SetCondition(GetFGR<float>(op1) <= GetFGR<float>(op2)); }
 
         #endregion
     }
