@@ -131,7 +131,7 @@ namespace Chroma64.Emulator.CPU
 
             instrsFPU = new Dictionary<uint, Action<uint>>()
             {
-                { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_L_FMT },
+                { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_W_FMT },
             };
         }
 
