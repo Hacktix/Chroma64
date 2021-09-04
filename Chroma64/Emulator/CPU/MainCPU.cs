@@ -62,9 +62,9 @@ namespace Chroma64.Emulator.CPU
 
             // Initialize COP0 Registers
             COP0.Registers[1] = 0x0000001F;
-            COP0.Registers[12] = 0x70400004;
+            COP0.Registers[12] = 0x34000000;
             COP0.Registers[15] = 0x00000B00;
-            COP0.Registers[16] = 0x0006E463;
+            COP0.Registers[16] = 0x7006E463;
 
             // # Initializing Instruction LUT
 
@@ -132,6 +132,7 @@ namespace Chroma64.Emulator.CPU
             instrsFPU = new Dictionary<uint, Action<uint>>()
             {
                 { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_W_FMT },
+                { 5, MIPS_ABS_FMT }, { 0, MIPS_ADD_FMT },
             };
         }
 
@@ -1181,6 +1182,40 @@ namespace Chroma64.Emulator.CPU
                     break;
                 case 0b10001:
                     COP1.CVT_W_D(src, dest);
+                    break;
+            }
+        }
+
+        void MIPS_ABS_FMT(uint instr)
+        {
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int dest = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10001:
+                    COP1.ABS_D(src, dest);
+                    break;
+                case 0b10000:
+                    COP1.ABS_S(src, dest);
+                    break;
+            }
+        }
+        void MIPS_ADD_FMT(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 6)) >> 6);
+            int op1 = (int)((instr & (0x1F << 11)) >> 11);
+            int op2 = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10001:
+                    Log.Info($"ADD.D - {instr:X8} : {COP1.GetFGR<double>(op1)} + {COP1.GetFGR<double>(op2)}");
+                    COP1.ADD_D(op1, op2, dest);
+                    break;
+                case 0b10000:
+                    Log.Info($"ADD.S - {COP1.GetFGR<float>(op1)} + {COP1.GetFGR<float>(op2)}");
+                    COP1.ADD_S(op1, op2, dest);
                     break;
             }
         }
