@@ -140,7 +140,7 @@ namespace Chroma64.Emulator.CPU
 
             instrsFPUBranch = new Dictionary<uint, Action<uint>>()
             {
-                { 0, MIPS_BC1F }, { 1, MIPS_BC1T },
+                { 0, MIPS_BC1F }, { 1, MIPS_BC1T }, { 2, MIPS_BC1FL }, { 3, MIPS_BC1TL },
             };
         }
 
@@ -1314,6 +1314,22 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BC1T", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
+        void MIPS_BC1TL(uint instr)
+        {
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            bool cond = COP1.GetCondition();
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
+
+            LogInstr("BC1TL", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
         void MIPS_BC1F(uint instr)
         {
             ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
@@ -1326,6 +1342,22 @@ namespace Chroma64.Emulator.CPU
             }
 
             LogInstr("BC1F", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
+        void MIPS_BC1FL(uint instr)
+        {
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            bool cond = !COP1.GetCondition();
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
+
+            LogInstr("BC1FL", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
         #endregion
