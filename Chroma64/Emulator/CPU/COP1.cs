@@ -1,4 +1,4 @@
-﻿using Chroma64.Util;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Chroma64.Emulator.CPU
@@ -134,6 +134,20 @@ namespace Chroma64.Emulator.CPU
         // CVT.L.fmt
         public void CVT_L_D(int src, int dest) { SetFGR(dest, (long)GetFGR<double>(src)); }
         public void CVT_L_S(int src, int dest) { SetFGR(dest, (long)GetFGR<float>(src)); }
+
+        #endregion
+
+        #region ABS Instructions
+
+        public void ABS_D(int src, int dest) { SetFGR(dest, Math.Abs(GetFGR<double>(src))); }
+        public void ABS_S(int src, int dest) { SetFGR(dest, Math.Abs(GetFGR<float>(src))); }
+
+        #endregion
+
+        #region ADD Instructions
+
+        public void ADD_D(int op1, int op2, int dest) { SetFGR(dest, (double)GetFGR<double>(op1) + GetFGR<double>(op2)); }
+        public void ADD_S(int op1, int op2, int dest) { SetFGR(dest, GetFGR<float>(op1) + GetFGR<float>(op2)); }
 
         #endregion
     }
