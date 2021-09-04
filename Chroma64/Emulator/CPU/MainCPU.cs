@@ -133,6 +133,7 @@ namespace Chroma64.Emulator.CPU
             instrsFPU = new Dictionary<uint, Action<uint>>()
             {
                 { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_W_FMT },
+                { 9, MIPS_TRUNC_L_FMT }, { 13, MIPS_TRUNC_W_FMT },
                 { 5, MIPS_ABS_FMT }, { 0, MIPS_ADD_FMT }, { 1, MIPS_SUB_FMT }, { 3, MIPS_DIV_FMT },
             };
             for (uint i = 0b110000; i < 0x3F; i++)
@@ -1284,6 +1285,38 @@ namespace Chroma64.Emulator.CPU
                     break;
                 case 0b10000:
                     COP1.DIV_S(op1, op2, dest);
+                    break;
+            }
+        }
+
+        void MIPS_TRUNC_L_FMT(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 6)) >> 6);
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10001:
+                    COP1.TRUNC_L_D(src, dest);
+                    break;
+                case 0b10000:
+                    COP1.TRUNC_L_S(src, dest);
+                    break;
+            }
+        }
+
+        void MIPS_TRUNC_W_FMT(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 6)) >> 6);
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10001:
+                    COP1.TRUNC_W_D(src, dest);
+                    break;
+                case 0b10000:
+                    COP1.TRUNC_W_S(src, dest);
                     break;
             }
         }
