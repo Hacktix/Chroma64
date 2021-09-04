@@ -98,7 +98,7 @@ namespace Chroma64.Emulator.CPU
             instrsSpecial = new Dictionary<uint, Action<uint>>()
             {
                 // Bitwise Operations
-                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 2, MIPS_SRL }, { 3, MIPS_SRA }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV }, { 56, MIPS_DSLL }, { 60, MIPS_DSLL32 },
+                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 39, MIPS_NOR }, { 2, MIPS_SRL }, { 3, MIPS_SRA }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV }, { 56, MIPS_DSLL }, { 60, MIPS_DSLL32 },
 
                 // Arithmetic Operations
                 { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 26, MIPS_DIV }, { 27, MIPS_DIVU }, { 44, MIPS_DADD },
@@ -770,6 +770,19 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, res);
 
             LogInstr("OR", $"{op1} | {op2} -> {val1:X16} | {val2:X16} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_NOR(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val1 = GetReg(op1);
+            long val2 = GetReg(op2);
+            long res = (~val1) & (~val2);
+            SetReg(dest, res);
+
+            LogInstr("OR", $"~{op1} & ~{op2} -> ~{val1:X16} & ~{val2:X16} -> {res:X16} -> {dest}");
         }
 
         void MIPS_XOR(uint instr)
