@@ -118,28 +118,22 @@ namespace Chroma64.Emulator.CPU
         #region CVT Instructions
 
         // CVT.D.fmt
-        public void CVT_D_D(int src, int dest) { SetFGR(dest, (double)GetFGR<double>(src)); }
         public void CVT_D_S(int src, int dest) { SetFGR(dest, (double)GetFGR<float>(src)); }
         public void CVT_D_W(int src, int dest) { SetFGR(dest, (double)GetFGR<int>(src)); }
         public void CVT_D_L(int src, int dest) { SetFGR(dest, (double)GetFGR<long>(src)); }
 
         // CVT.S.fmt
         public void CVT_S_D(int src, int dest) { SetFGR(dest, (float)GetFGR<double>(src)); }
-        public void CVT_S_S(int src, int dest) { SetFGR(dest, (float)GetFGR<float>(src)); }
         public void CVT_S_W(int src, int dest) { SetFGR(dest, (float)GetFGR<int>(src)); }
         public void CVT_S_L(int src, int dest) { SetFGR(dest, (float)GetFGR<long>(src)); }
 
         // CVT.W.fmt
         public void CVT_W_D(int src, int dest) { SetFGR(dest, (int)GetFGR<double>(src)); }
         public void CVT_W_S(int src, int dest) { SetFGR(dest, (int)GetFGR<float>(src)); }
-        public void CVT_W_W(int src, int dest) { SetFGR(dest, (int)GetFGR<int>(src)); }
-        public void CVT_W_L(int src, int dest) { SetFGR(dest, (int)GetFGR<long>(src)); }
 
         // CVT.L.fmt
         public void CVT_L_D(int src, int dest) { SetFGR(dest, (long)GetFGR<double>(src)); }
         public void CVT_L_S(int src, int dest) { SetFGR(dest, (long)GetFGR<float>(src)); }
-        public void CVT_L_W(int src, int dest) { SetFGR(dest, (long)GetFGR<int>(src)); }
-        public void CVT_L_L(int src, int dest) { SetFGR(dest, (long)GetFGR<long>(src)); }
 
         #endregion
     }

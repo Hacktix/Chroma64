@@ -1048,6 +1048,71 @@ namespace Chroma64.Emulator.CPU
 
         #region Coprocessor Instructions
 
+        #region COP0 Instructions
+
+        void MIPS_MTC0(uint instr)
+        {
+            COP0REG dest = (COP0REG)((instr & (0x1F << 11)) >> 11);
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            COP0.SetReg(dest, GetReg(src));
+
+            LogInstr("MTC0", $"{src} -> {GetReg(src):X16} -> {dest}");
+        }
+
+        void MIPS_MFC0(uint instr)
+        {
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            COP0REG src = (COP0REG)((instr & (0x1F << 11)) >> 11);
+            SetReg(dest, COP0.GetReg(src));
+
+            LogInstr("MFC0", $"{src} -> {COP0.GetReg(src):X16} -> {dest}");
+        }
+
+        #endregion
+
+        #region TLB Instructions
+
+        void MIPS_TLBWI(uint instr)
+        {
+            LogInstr("TLBWI", "Not yet implemented.");
+        }
+
+        #endregion
+
+        #region COP1 Instructions
+
+        void MIPS_MTC1(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 11)) >> 11);
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            COP1.SetFGR(dest, GetReg(src));
+
+            LogInstr("MTC1", $"{src} -> {GetReg(src):X16} -> {dest}");
+        }
+
+        void MIPS_CTC1(uint instr)
+        {
+            uint fcr = (instr & (0x1F << 11)) >> 11;
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = GetReg(src);
+            if (fcr == 31)
+                COP1.FCR31 = (int)val;
+
+            LogInstr("CTC1", $"{src} -> {val:X16} -> FCR{fcr}");
+        }
+
+        void MIPS_CFC1(uint instr)
+        {
+            uint fcr = (instr & (0x1F << 11)) >> 11;
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = fcr == 0 ? default : COP1.FCR31;
+            SetReg(dest, val);
+
+            LogInstr("CFC1", $"FCR{fcr} -> {val:X16} -> {dest}");
+        }
+
+        #endregion
+
         #region FPU Instructions
 
         void MIPS_CVT_D_FMT(uint instr)
@@ -1122,53 +1187,7 @@ namespace Chroma64.Emulator.CPU
 
         #endregion
 
-        void MIPS_MTC0(uint instr)
-        {
-            COP0REG dest = (COP0REG)((instr & (0x1F << 11)) >> 11);
-            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            COP0.SetReg(dest, GetReg(src));
-
-            LogInstr("MTC0", $"{src} -> {GetReg(src):X16} -> {dest}");
-        }
-
-        void MIPS_MTC1(uint instr)
-        {
-            int dest = (int)((instr & (0x1F << 11)) >> 11);
-            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            COP1.SetFGR(dest, GetReg(src));
-
-            LogInstr("MTC1", $"{src} -> {GetReg(src):X16} -> {dest}");
-        }
-
-        void MIPS_MFC0(uint instr)
-        {
-            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            COP0REG src = (COP0REG)((instr & (0x1F << 11)) >> 11);
-            SetReg(dest, COP0.GetReg(src));
-
-            LogInstr("MFC0", $"{src} -> {COP0.GetReg(src):X16} -> {dest}");
-        }
-
-        void MIPS_CTC1(uint instr)
-        {
-            uint fcr = (instr & (0x1F << 11)) >> 11;
-            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            long val = GetReg(src);
-            if (fcr == 31)
-                COP1.FCR31 = (int)val;
-
-            LogInstr("CTC1", $"{src} -> {val:X16} -> FCR{fcr}");
-        }
-
-        void MIPS_CFC1(uint instr)
-        {
-            uint fcr = (instr & (0x1F << 11)) >> 11;
-            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            long val = fcr == 0 ? default : COP1.FCR31;
-            SetReg(dest, val);
-
-            LogInstr("CFC1", $"FCR{fcr} -> {val:X16} -> {dest}");
-        }
+        #endregion
 
         void MIPS_ERET()
         {
@@ -1186,12 +1205,6 @@ namespace Chroma64.Emulator.CPU
                 pc = (ulong)COP0.GetReg(COP0REG.EPC);
             }
         }
-
-        void MIPS_TLBWI(uint instr)
-        {
-            LogInstr("TLBWI", "Not yet implemented.");
-        }
-        #endregion
 
     }
 }
