@@ -11,11 +11,6 @@ namespace Chroma64.Emulator.CPU
         ZERO, AT, V0, V1, A0, A1, A2, A3, T0, T1, T2, T3, T4, T5, T6, T7, S0, S1, S2, S3, S4, S5, S6, S7, T8, T9, K0, K1, GP, SP, S8, RA
     }
 
-    public enum InstructionType
-    {
-        Normal, Special, REGIMM, COP
-    }
-
     class MainCPU
     {
         private long[] regs = new long[32];
@@ -27,14 +22,18 @@ namespace Chroma64.Emulator.CPU
         private ulong breakpoint = 0;
         private bool debugging = false;
 
-        private COP0 cop0 = new COP0();
-        private COP1 cop1 = new COP1();
+        public COP0 COP0;
+        public COP1 COP1;
         private MemoryBus bus;
 
         private Dictionary<uint, Action<uint>> instrs = new Dictionary<uint, Action<uint>>();
         private Dictionary<uint, Action<uint>> instrsSpecial = new Dictionary<uint, Action<uint>>();
         private Dictionary<uint, Action<uint>> instrsRegimm = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsCop = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsCOP0 = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsTLB = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsCOP1 = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsFPU = new Dictionary<uint, Action<uint>>();
+        private Dictionary<uint, Action<uint>> instrsCOPz = new Dictionary<uint, Action<uint>>();
 
         // Branch Instruction Variables
         private int branchQueued = 0;
@@ -43,6 +42,8 @@ namespace Chroma64.Emulator.CPU
         public MainCPU(MemoryBus bus)
         {
             this.bus = bus;
+            COP0 = new COP0(this);
+            COP1 = new COP1(this);
 
             // # Simulating the PIF ROM
 
@@ -60,10 +61,10 @@ namespace Chroma64.Emulator.CPU
             }
 
             // Initialize COP0 Registers
-            cop0.Registers[1] = 0x0000001F;
-            cop0.Registers[12] = 0x70400004;
-            cop0.Registers[15] = 0x00000B00;
-            cop0.Registers[16] = 0x0006E463;
+            COP0.Registers[1] = 0x0000001F;
+            COP0.Registers[12] = 0x70400004;
+            COP0.Registers[15] = 0x00000B00;
+            COP0.Registers[16] = 0x0006E463;
 
             // # Initializing Instruction LUT
 
@@ -77,9 +78,11 @@ namespace Chroma64.Emulator.CPU
 
                 // Load Instructions
                 { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 55, MIPS_LD },
+                { 53, MIPS_LDC1 }, { 49, MIPS_LWC1 },
 
                 // Store Instructions
                 { 40, MIPS_SB }, { 41, MIPS_SH }, { 43, MIPS_SW }, { 63, MIPS_SD },
+                { 61, MIPS_SDC1 }, { 57, MIPS_SWC1 },
 
                 // Arithmetic Operations
                 { 9, MIPS_ADDIU }, { 8, MIPS_ADDI }, { 24, MIPS_DADDI },
@@ -111,11 +114,24 @@ namespace Chroma64.Emulator.CPU
                 { 1, MIPS_BGEZ }, { 17, MIPS_BGEZAL },
             };
 
-            instrsCop = new Dictionary<uint, Action<uint>>()
+            instrsCOP0 = new Dictionary<uint, Action<uint>>()
             {
-                { 0, MIPS_MFC0 }, { 4, MIPS_MTC0 }, { 2, MIPS_CFC1 }, { 6, MIPS_CTC1 },
+                { 0, MIPS_MFC0 }, { 4, MIPS_MTC0 },
+            };
 
-                { 16, MIPS_TLBWI },
+            instrsTLB = new Dictionary<uint, Action<uint>>()
+            {
+                { 2, MIPS_TLBWI },
+            };
+
+            instrsCOP1 = new Dictionary<uint, Action<uint>>()
+            {
+                { 2, MIPS_CFC1 }, { 6, MIPS_CTC1 }, { 4, MIPS_MTC1 },
+            };
+
+            instrsFPU = new Dictionary<uint, Action<uint>>()
+            {
+                { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_L_FMT },
             };
         }
 
@@ -137,7 +153,7 @@ namespace Chroma64.Emulator.CPU
                     else
                     {
                         uint opcode = (instr & 0xFC000000) >> 26;
-                        CheckInstructionImplemented(instr, opcode, InstructionType.Normal);
+                        CheckInstructionImplemented(instr, opcode, instrs);
                         instrs[opcode](instr);
                     }
                 }
@@ -171,38 +187,12 @@ namespace Chroma64.Emulator.CPU
         }
 
         [Conditional("DEBUG")]
-        private void CheckInstructionImplemented(uint instr, uint opcode, InstructionType type)
+        private void CheckInstructionImplemented(uint instr, uint opcode, Dictionary<uint, Action<uint>> set)
         {
-            switch (type)
+            if (!set.ContainsKey(opcode))
             {
-                case InstructionType.Normal:
-                    if (!instrs.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
-                case InstructionType.Special:
-                    if (!instrsSpecial.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
-                case InstructionType.REGIMM:
-                    if (!instrsRegimm.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
-                case InstructionType.COP:
-                    if (!instrsCop.ContainsKey(opcode))
-                    {
-                        pc -= 4;
-                        Log.FatalError($"Unimplemented Coprocessor Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-                    }
-                    break;
+                pc -= 4;
+                Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
             }
 
         }
@@ -225,22 +215,59 @@ namespace Chroma64.Emulator.CPU
         private void InstrSpecial(uint instr)
         {
             uint opcode = instr & 0x3F;
-            CheckInstructionImplemented(instr, opcode, InstructionType.Special);
+            CheckInstructionImplemented(instr, opcode, instrsSpecial);
             instrsSpecial[opcode](instr);
         }
 
         private void InstrRegimm(uint instr)
         {
             uint opcode = (instr & 0x1F0000) >> 16;
-            CheckInstructionImplemented(instr, opcode, InstructionType.REGIMM);
+            CheckInstructionImplemented(instr, opcode, instrsRegimm);
             instrsRegimm[opcode](instr);
         }
 
         private void InstrCop(uint instr)
         {
-            uint opcode = (instr & 0x3E00000) >> 21;
-            CheckInstructionImplemented(instr, opcode, InstructionType.COP);
-            instrsCop[opcode](instr);
+            uint cop = (uint)((instr & (0x3F << 26)) >> 26);
+
+            if (cop == 0b010001)
+            {
+                uint maybeOp = (instr & (0x1F << 21)) >> 21;
+                if (maybeOp == 0b10000 || maybeOp == 0b10101 || maybeOp == 0b10100 || maybeOp == 0b10001)
+                {
+                    uint cop1opcode = instr & 0x3F;
+                    CheckInstructionImplemented(instr, cop1opcode, instrsFPU);
+                    instrsFPU[cop1opcode](instr);
+                }
+                else
+                {
+                    CheckInstructionImplemented(instr, maybeOp, instrsCOP1);
+                    instrsCOP1[maybeOp](instr);
+                }
+            }
+            else if (cop == 0b010000)
+            {
+                if ((instr & 0b11111111111111111111000000) == 0b10000000000000000000000000)
+                {
+                    uint opcode = instr & 0x3F;
+                    CheckInstructionImplemented(instr, opcode, instrsTLB);
+                    instrsTLB[opcode](instr);
+                }
+                else
+                {
+                    uint opcode = (instr & (0x3F << 21)) >> 21;
+                    CheckInstructionImplemented(instr, opcode, instrsCOP0);
+                    instrsCOP0[opcode](instr);
+                }
+            }
+            else
+            {
+                uint opcode = (instr & (0x3F << 21)) >> 21;
+                CheckInstructionImplemented(instr, opcode, instrsCOPz);
+                instrsCOPz[opcode](instr);
+            }
+
+
         }
         #endregion
 
@@ -470,6 +497,36 @@ namespace Chroma64.Emulator.CPU
             LogInstr("LD", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> {dest}");
         }
 
+        #region FPU Loads
+
+        void MIPS_LWC1(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            int dest = (int)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            int val = bus.Read<int>(addr);
+            COP1.SetFGR(dest, val);
+
+            LogInstr("LWC1", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> FGR{dest}");
+        }
+
+        void MIPS_LDC1(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            int dest = (int)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            long val = bus.Read<long>(addr);
+            COP1.SetFGR(dest, val);
+
+            LogInstr("LDC1", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> FGR{dest}");
+        }
+
+        #endregion
+
         #endregion
 
         #region Store Instructions
@@ -525,6 +582,36 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("SD", $"{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
+
+        #region FPU Stores
+
+        void MIPS_SWC1(uint instr)
+        {
+            int src = (int)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(dest);
+            ulong addr = (ulong)(baseAddr + offset);
+            int val = COP1.GetFGR<int>(src);
+            bus.Write(addr, val);
+
+            LogInstr("SWC1", $"FGR{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
+
+        void MIPS_SDC1(uint instr)
+        {
+            int src = (int)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(dest);
+            ulong addr = (ulong)(baseAddr + offset);
+            long val = COP1.GetFGR<long>(src);
+            bus.Write(addr, val);
+
+            LogInstr("SDC1", $"FGR{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
+
+        #endregion
 
         #endregion
 
@@ -960,22 +1047,106 @@ namespace Chroma64.Emulator.CPU
         #endregion
 
         #region Coprocessor Instructions
+
+        #region FPU Instructions
+
+        void MIPS_CVT_D_FMT(uint instr)
+        {
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int dest = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10000:
+                    COP1.CVT_D_S(src, dest);
+                    break;
+                case 0b10100:
+                    COP1.CVT_D_W(src, dest);
+                    break;
+                case 0b10101:
+                    COP1.CVT_D_L(src, dest);
+                    break;
+            }
+        }
+
+        void MIPS_CVT_S_FMT(uint instr)
+        {
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int dest = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10100:
+                    COP1.CVT_S_W(src, dest);
+                    break;
+                case 0b10101:
+                    COP1.CVT_S_L(src, dest);
+                    break;
+                case 0b10001:
+                    COP1.CVT_S_D(src, dest);
+                    break;
+            }
+        }
+
+        void MIPS_CVT_L_FMT(uint instr)
+        {
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int dest = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10000:
+                    COP1.CVT_L_S(src, dest);
+                    break;
+                case 0b10001:
+                    COP1.CVT_L_D(src, dest);
+                    break;
+            }
+        }
+
+        void MIPS_CVT_W_FMT(uint instr)
+        {
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int dest = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10000:
+                    COP1.CVT_W_S(src, dest);
+                    break;
+                case 0b10001:
+                    COP1.CVT_W_D(src, dest);
+                    break;
+            }
+        }
+
+        #endregion
+
         void MIPS_MTC0(uint instr)
         {
             COP0REG dest = (COP0REG)((instr & (0x1F << 11)) >> 11);
             CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            cop0.SetReg(dest, GetReg(src));
+            COP0.SetReg(dest, GetReg(src));
 
             LogInstr("MTC0", $"{src} -> {GetReg(src):X16} -> {dest}");
+        }
+
+        void MIPS_MTC1(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 11)) >> 11);
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            COP1.SetFGR(dest, GetReg(src));
+
+            LogInstr("MTC1", $"{src} -> {GetReg(src):X16} -> {dest}");
         }
 
         void MIPS_MFC0(uint instr)
         {
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             COP0REG src = (COP0REG)((instr & (0x1F << 11)) >> 11);
-            SetReg(dest, cop0.GetReg(src));
+            SetReg(dest, COP0.GetReg(src));
 
-            LogInstr("MFC0", $"{src} -> {cop0.GetReg(src):X16} -> {dest}");
+            LogInstr("MFC0", $"{src} -> {COP0.GetReg(src):X16} -> {dest}");
         }
 
         void MIPS_CTC1(uint instr)
@@ -984,7 +1155,7 @@ namespace Chroma64.Emulator.CPU
             CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = GetReg(src);
             if (fcr == 31)
-                cop1.FCR31 = (int)val;
+                COP1.FCR31 = (int)val;
 
             LogInstr("CTC1", $"{src} -> {val:X16} -> FCR{fcr}");
         }
@@ -993,7 +1164,7 @@ namespace Chroma64.Emulator.CPU
         {
             uint fcr = (instr & (0x1F << 11)) >> 11;
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            long val = fcr == 0 ? default : cop1.FCR31;
+            long val = fcr == 0 ? default : COP1.FCR31;
             SetReg(dest, val);
 
             LogInstr("CFC1", $"FCR{fcr} -> {val:X16} -> {dest}");
@@ -1001,18 +1172,18 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_ERET()
         {
-            long sr = cop0.GetReg(COP0REG.Status);
+            long sr = COP0.GetReg(COP0REG.Status);
             if ((sr & 0b100) != 0)
             {
                 sr &= ~(0b100);
-                cop0.SetReg(COP0REG.Status, sr);
-                pc = (ulong)cop0.GetReg(COP0REG.ErrorEPC);
+                COP0.SetReg(COP0REG.Status, sr);
+                pc = (ulong)COP0.GetReg(COP0REG.ErrorEPC);
             }
             else
             {
                 sr &= ~(0b10);
-                cop0.SetReg(COP0REG.Status, sr);
-                pc = (ulong)cop0.GetReg(COP0REG.EPC);
+                COP0.SetReg(COP0REG.Status, sr);
+                pc = (ulong)COP0.GetReg(COP0REG.EPC);
             }
         }
 

@@ -10,8 +10,15 @@ namespace Chroma64.Emulator.CPU
 
     class COP0
     {
-        private Random random = new Random();
         public long[] Registers = new long[32];
+
+        private Random random = new Random();
+        private MainCPU parent;
+
+        public COP0(MainCPU parent)
+        {
+            this.parent = parent;
+        }
 
         // TODO: 64 bit regs
         public void SetReg(COP0REG reg, long value)
