@@ -251,7 +251,7 @@ namespace Chroma64.Emulator.CPU
                 }
                 else
                 {
-                    if(maybeOp == 0b01000)
+                    if (maybeOp == 0b01000)
                     {
                         uint fpuBranchOpcode = (instr & (0x3F << 16)) >> 16;
                         CheckInstructionImplemented(instr, fpuBranchOpcode, instrsFPUBranch);
@@ -1387,7 +1387,7 @@ namespace Chroma64.Emulator.CPU
             int op1 = (int)((instr & (0x1F << 11)) >> 11);
             int op2 = (int)((instr & (0x1F << 16)) >> 16);
             int fmt = (int)((instr & (0x1F << 21)) >> 21);
-            switch(cond)
+            switch (cond)
             {
                 case 0xE:
                     switch (fmt)

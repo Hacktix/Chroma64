@@ -39,6 +39,10 @@ namespace Chroma64.Emulator.Memory
             if (addr >= 0x00000000 && addr <= 0x003FFFFF)
                 return RDRAM.Read<T>(addr & 0x3FFFFF);
 
+            // TODO: RDRAM (Expansion Pak)
+            else if (addr >= 0x00400000 && addr <= 0x007FFFFF)
+                return default;
+
             // SP DMEM
             else if (addr >= 0x04000000 && addr <= 0x04000FFF)
                 return SP_DMEM.Read<T>(addr & 0xFFF);
@@ -97,6 +101,10 @@ namespace Chroma64.Emulator.Memory
             // RDRAM (Built-in)
             if (addr >= 0x00000000 && addr <= 0x003FFFFF)
                 RDRAM.Write(addr & 0x3FFFFF, val);
+
+            // TODO: RDRAM (Expansion Pak)
+            else if (addr >= 0x00400000 && addr <= 0x007FFFFF)
+                return;
 
             // SP DMEM
             else if (addr >= 0x04000000 && addr <= 0x04000FFF)
