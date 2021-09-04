@@ -101,7 +101,7 @@ namespace Chroma64.Emulator.CPU
                 { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 2, MIPS_SRL }, { 3, MIPS_SRA }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV },
 
                 // Arithmetic Operations
-                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 27, MIPS_DIVU }, { 44, MIPS_DADD },
+                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 26, MIPS_DIV }, { 27, MIPS_DIVU }, { 44, MIPS_DADD },
 
                 // Control Flow
                 { 8, MIPS_JR },
@@ -127,7 +127,7 @@ namespace Chroma64.Emulator.CPU
 
             instrsCOP1 = new Dictionary<uint, Action<uint>>()
             {
-                { 2, MIPS_CFC1 }, { 6, MIPS_CTC1 }, { 4, MIPS_MTC1 },
+                { 0, MIPS_MFC1 }, { 2, MIPS_CFC1 }, { 6, MIPS_CTC1 }, { 4, MIPS_MTC1 },
             };
 
             instrsFPU = new Dictionary<uint, Action<uint>>()
@@ -919,14 +919,28 @@ namespace Chroma64.Emulator.CPU
             LogInstr("MULT", $"{op1} * {op2} -> {val1:X8} * {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
         }
 
+        void MIPS_DIV(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val1 = (int)GetReg(op1);
+            long val2 = (int)GetReg(op2);
+            long resLo = val2 == 0 ? (val1 < 0 ? 1 : -1) : (val1 / val2);
+            long resHi = val2 == 0 ? val1 : (val1 % val2);
+            lo = resLo;
+            hi = resHi;
+
+            LogInstr("DIV", $"{op1} / {op2} -> {val1:X8} / {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
+        }
+
         void MIPS_DIVU(uint instr)
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
             CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
             ulong val1 = (uint)GetReg(op1);
             ulong val2 = (uint)GetReg(op2);
-            long resLo = (long)(val1 / val2);
-            long resHi = (long)(val1 % val2);
+            long resLo = val2 == 0 ? long.MaxValue : (long)(val1 / val2);
+            long resHi = val2 == 0 ? (long)val1 : (long)(val1 % val2);
             lo = resLo;
             hi = resHi;
 
@@ -1125,6 +1139,15 @@ namespace Chroma64.Emulator.CPU
             COP1.SetFGR(dest, GetReg(src));
 
             LogInstr("MTC1", $"{src} -> {GetReg(src):X16} -> {dest}");
+        }
+
+        void MIPS_MFC1(uint instr)
+        {
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            SetReg(dest, COP1.GetFGR<int>(src));
+
+            LogInstr("MFC1", $"FGR{src} -> {COP1.GetFGR<int>(src):X16} -> {dest}");
         }
 
         void MIPS_CTC1(uint instr)
