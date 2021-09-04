@@ -111,7 +111,7 @@ namespace Chroma64.Emulator.CPU
 
             instrsRegimm = new Dictionary<uint, Action<uint>>()
             {
-                { 1, MIPS_BGEZ }, { 17, MIPS_BGEZAL },
+                { 1, MIPS_BGEZ }, { 3, MIPS_BGEZL }, { 17, MIPS_BGEZAL },
             };
 
             instrsCOP0 = new Dictionary<uint, Action<uint>>()
@@ -1026,6 +1026,24 @@ namespace Chroma64.Emulator.CPU
             }
 
             LogInstr("BGEZ", $"{src} >= 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
+        void MIPS_BGEZL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val >= 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
+
+            LogInstr("BGEZL", $"{src} >= 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
         void MIPS_BGEZAL(uint instr)
