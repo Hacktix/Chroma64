@@ -132,7 +132,7 @@ namespace Chroma64.Emulator.CPU
             instrsFPU = new Dictionary<uint, Action<uint>>()
             {
                 { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_W_FMT },
-                { 5, MIPS_ABS_FMT }, { 0, MIPS_ADD_FMT },
+                { 5, MIPS_ABS_FMT }, { 0, MIPS_ADD_FMT }, { 3, MIPS_DIV_FMT },
             };
         }
 
@@ -1219,6 +1219,7 @@ namespace Chroma64.Emulator.CPU
                     break;
             }
         }
+
         void MIPS_ADD_FMT(uint instr)
         {
             int dest = (int)((instr & (0x1F << 6)) >> 6);
@@ -1232,6 +1233,23 @@ namespace Chroma64.Emulator.CPU
                     break;
                 case 0b10000:
                     COP1.ADD_S(op1, op2, dest);
+                    break;
+            }
+        }
+
+        void MIPS_DIV_FMT(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 6)) >> 6);
+            int op1 = (int)((instr & (0x1F << 11)) >> 11);
+            int op2 = (int)((instr & (0x1F << 16)) >> 16);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            switch (fmt)
+            {
+                case 0b10001:
+                    COP1.DIV_D(op1, op2, dest);
+                    break;
+                case 0b10000:
+                    COP1.DIV_S(op1, op2, dest);
                     break;
             }
         }

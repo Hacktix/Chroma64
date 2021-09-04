@@ -146,8 +146,15 @@ namespace Chroma64.Emulator.CPU
 
         #region ADD Instructions
 
-        public void ADD_D(int op1, int op2, int dest) { SetFGR(dest, (double)GetFGR<double>(op1) + GetFGR<double>(op2)); }
+        public void ADD_D(int op1, int op2, int dest) { SetFGR(dest, GetFGR<double>(op1) + GetFGR<double>(op2)); }
         public void ADD_S(int op1, int op2, int dest) { SetFGR(dest, GetFGR<float>(op1) + GetFGR<float>(op2)); }
+
+        #endregion
+
+        #region DIV Instructions
+
+        public void DIV_D(int op1, int op2, int dest) { SetFGR(dest, GetFGR<double>(op1) / GetFGR<double>(op2)); }
+        public void DIV_S(int op1, int op2, int dest) { SetFGR(dest, GetFGR<float>(op1) / GetFGR<float>(op2)); }
 
         #endregion
     }
