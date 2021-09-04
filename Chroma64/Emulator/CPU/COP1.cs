@@ -178,6 +178,42 @@ namespace Chroma64.Emulator.CPU
 
         #endregion
 
+        #region TRUNC Instructions
+
+        // TRUNC.L.fmt
+        public void TRUNC_L_D(int src, int dest)
+        {
+            RoundMode curRound = GetRound();
+            SetRound(RoundMode.FE_TOWARDZERO);
+            SetFGR(dest, (long)GetFGR<double>(src));
+            SetRound(curRound);
+        }
+        public void TRUNC_L_S(int src, int dest)
+        {
+            RoundMode curRound = GetRound();
+            SetRound(RoundMode.FE_TOWARDZERO);
+            SetFGR(dest, (long)GetFGR<float>(src));
+            SetRound(curRound);
+        }
+
+        // TRUNC.W.fmt
+        public void TRUNC_W_D(int src, int dest)
+        {
+            RoundMode curRound = GetRound();
+            SetRound(RoundMode.FE_TOWARDZERO);
+            SetFGR(dest, (int)GetFGR<double>(src));
+            SetRound(curRound);
+        }
+        public void TRUNC_W_S(int src, int dest)
+        {
+            RoundMode curRound = GetRound();
+            SetRound(RoundMode.FE_TOWARDZERO);
+            SetFGR(dest, (int)GetFGR<float>(src));
+            SetRound(curRound);
+        }
+
+        #endregion
+
         #region Compare Instructions
 
         // C.LE.fmt
