@@ -1,5 +1,6 @@
 ﻿using Chroma.Graphics;
 using Chroma64.Emulator.Memory;
+using Chroma64.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,6 +47,12 @@ namespace Chroma64.Emulator.IO
 
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
+            if(addr >= (ulong)VI.CURRENT_REG && addr < (ulong)VI.CURRENT_REG + 4)
+            {
+                bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) & ~0b1000));
+                return;
+            }
+
             // Addresses over 0x37 are unused
             if (addr > 0x37)
                 return;
@@ -65,7 +72,7 @@ namespace Chroma64.Emulator.IO
 
         public bool NeedsRender()
         {
-            return (GetRegister(VI.CONTROL_REG) & 0b11) == 3;
+            return (GetRegister(VI.CONTROL_REG) & 0b11) > 1;
         }
 
         public void SetFramebuffer(ref Texture tex)
@@ -76,12 +83,27 @@ namespace Chroma64.Emulator.IO
 
             int origin = (int)(GetRegister(VI.DRAM_ADDR_REG) & 0x3FFFFF);
             byte[] data = new byte[width * height * 4];
-            Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - origin - data.Length, data, 0, data.Length);
-            Array.Reverse(data);
+            //if((GetRegister(VI.CONTROL_REG) & 0b11) == 3)
+            //{
+                Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - origin - data.Length, data, 0, data.Length);
+                Array.Reverse(data);
+            /*}
+            else
+            {
+                byte[] tmpData = new byte[width * height * 2];
+                Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - origin - data.Length, data, 0, data.Length);
+                Array.Reverse(data);
 
-            int cnt = 0;
-            foreach (byte b in data)
-                cnt += b != 0 ? 1 : 0;
+                int dataCnt = 0;
+                for(int i = 0; i < tmpData.Length; i += 2)
+                {
+                    short color = (short)((tmpData[i] << 8) | tmpData[i + 1]);
+                    data[dataCnt++] = (byte)(255 * ((double)0x1F / ((color & (0x1F << 11)) >> 11)));
+                    data[dataCnt++] = (byte)(255 * ((double)0x1F / ((color & (0x1F << 6)) >> 6)));
+                    data[dataCnt++] = (byte)(255 * ((double)0x1F / ((color & (0x1F << 1)) >> 1)));
+                    data[dataCnt++] = 255;
+                }
+            }*/
 
             if (tex == null || tex.Width != width || tex.Height != height)
                 tex = new Texture(width, height, PixelFormat.RGBA);

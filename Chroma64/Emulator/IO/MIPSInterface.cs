@@ -1,4 +1,5 @@
 ﻿using Chroma64.Emulator.Memory;
+using Chroma64.Util;
 
 namespace Chroma64.Emulator.IO
 {
@@ -15,10 +16,16 @@ namespace Chroma64.Emulator.IO
 
     class MIPSInterface : BigEndianMemory
     {
+        private uint intr_mask = 0;
+
         public MIPSInterface() : base(0x10) { }
 
-        public new T Read<T>(ulong addr) where T : unmanaged
+        public new unsafe T Read<T>(ulong addr) where T : unmanaged
         {
+            // MI_INTR_MASK_REG
+            if (addr >= 0xC && addr <= 0xF)
+                fixed(uint* ptr = &intr_mask) return *(T*)ptr;
+
             // Addresses over 0xF are unused
             if (addr > 0xF)
                 return default;
@@ -26,8 +33,22 @@ namespace Chroma64.Emulator.IO
             return base.Read<T>(addr);
         }
 
-        public new void Write<T>(ulong addr, T val) where T : unmanaged
+        public new unsafe void Write<T>(ulong addr, T val) where T : unmanaged
         {
+            // MI_INTR_MASK_REG
+            if (addr >= 0xC && addr <= 0xF)
+            {
+                base.Write(addr, val);
+                uint maskChange = base.Read<uint>(0xC);
+                intr_mask = 0;
+                for(int i = 0; i < 6; i++)
+                {
+                    if ((maskChange & 2) != 0)
+                        intr_mask |= (uint)(1 << i);
+                    maskChange >>= 2;
+                }
+            }
+
             // Addresses over 0xF are unused
             if (addr > 0xF)
                 return;

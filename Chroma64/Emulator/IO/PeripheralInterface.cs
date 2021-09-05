@@ -34,6 +34,9 @@ namespace Chroma64.Emulator.IO
 
         public new T Read<T>(ulong addr) where T : unmanaged
         {
+            if (addr >= (ulong)PI.STATUS_REG && addr < (ulong)(PI.STATUS_REG + 4))
+                return default;
+
             // Addresses over 0x33 are unused
             if (addr > 0x33)
                 return default;
@@ -43,7 +46,14 @@ namespace Chroma64.Emulator.IO
 
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
-            if (addr >= (ulong)PI.WR_LEN_REG && addr < (ulong)(PI.WR_LEN_REG + 3))
+            if (addr >= (ulong)PI.STATUS_REG && addr < (ulong)(PI.STATUS_REG + 4))
+            {
+                base.Write<T>(addr, val);
+                if((base.Read<int>((ulong)PI.STATUS_REG) & 2) != 0)
+                    bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) & ~0b10000));
+            }
+
+            if (addr >= (ulong)PI.WR_LEN_REG && addr < (ulong)(PI.WR_LEN_REG + 4))
             {
                 base.Write<T>(addr, val);
                 int destAddr = (int)(GetRegister(PI.DRAM_ADDR_REG) & 0x7FFFFF);
@@ -52,6 +62,8 @@ namespace Chroma64.Emulator.IO
 
                 Array.Copy(bus.ROM.Bytes, bus.ROM.Bytes.Length - srcAddr - len,
                     bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - destAddr - len, len);
+
+                bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) | 0b10000));
 
                 Log.Info($"PI DMA from ROM:{srcAddr:X8} to RDRAM:{destAddr:X8} with length {len:X}");
                 return;

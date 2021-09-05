@@ -19,12 +19,12 @@ namespace Chroma64.Emulator.CPU
         private long hi;
         private long lo;
 
-        private ulong breakpoint = 0;
+        private ulong breakpoint = 0x8008b880;
         private bool debugging = false;
 
         public COP0 COP0;
         public COP1 COP1;
-        private MemoryBus bus;
+        public MemoryBus Bus;
 
         private Dictionary<uint, Action<uint>> instrs = new Dictionary<uint, Action<uint>>();
         private Dictionary<uint, Action<uint>> instrsSpecial = new Dictionary<uint, Action<uint>>();
@@ -42,7 +42,7 @@ namespace Chroma64.Emulator.CPU
 
         public MainCPU(MemoryBus bus)
         {
-            this.bus = bus;
+            this.Bus = bus;
             COP0 = new COP0(this);
             COP1 = new COP1(this);
 
@@ -151,8 +151,15 @@ namespace Chroma64.Emulator.CPU
             {
                 CheckBreakpoint();
 
+                // Tick COP0 registers
+                COP0.Tick();
+
+                // Check Interrupts
+                if(((COP0.GetReg(COP0REG.Status) & 0b111) == 0b001) && ((COP0.GetReg(COP0REG.Cause) & (COP0.GetReg(COP0REG.Status) & 0xFF00)) != 0))
+                    TriggerException(0);
+
                 // Fetch & increment PC
-                uint instr = bus.Read<uint>(pc);
+                uint instr = Bus.Read<uint>(pc);
                 pc += 4;
 
                 // Decode opcode & execute
@@ -174,6 +181,31 @@ namespace Chroma64.Emulator.CPU
                 if (branchQueued > 0 && --branchQueued == 0)
                     pc = branchTarget;
             }
+        }
+
+        public void TriggerException(int exceptionCode)
+        {
+            if (branchQueued > 0)
+                COP0.SetReg(COP0REG.Cause, COP0.GetReg(COP0REG.Cause) | (1 << 31));
+
+            if ((COP0.GetReg(COP0REG.Status) & 0b10) == 0)
+            {
+                if (branchQueued > 0)
+                    COP0.SetReg(COP0REG.EPC, (long)(pc - 4));
+                else
+                    COP0.SetReg(COP0REG.EPC, (long)pc);
+            }
+            COP0.Registers[(int)COP0REG.Status] |= 2;
+
+            COP0.SetReg(COP0REG.Cause, (COP0.GetReg(COP0REG.Cause) & (~0b1111100)) | (uint)((exceptionCode & 0x1F) << 2));
+
+            // TODO: Differentiate between TLB and other exceptions
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 22)) == 0)
+                pc = 0x80000180;
+            else
+                pc = 0xBFC00380;
+
+            branchQueued = 0;
         }
 
         #region Debug Methods
@@ -445,7 +477,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            sbyte val = bus.Read<sbyte>(addr);
+            sbyte val = Bus.Read<sbyte>(addr);
             SetReg(dest, val);
 
             LogInstr("LB", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X2} -> {dest}");
@@ -458,7 +490,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            byte val = bus.Read<byte>(addr);
+            byte val = Bus.Read<byte>(addr);
             SetReg(dest, val);
 
             LogInstr("LB", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X2} -> {dest}");
@@ -471,7 +503,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            short val = bus.Read<short>(addr);
+            short val = Bus.Read<short>(addr);
             SetReg(dest, val);
 
             LogInstr("LH", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X4} -> {dest}");
@@ -484,7 +516,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            ushort val = bus.Read<ushort>(addr);
+            ushort val = Bus.Read<ushort>(addr);
             SetReg(dest, val);
 
             LogInstr("LHU", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X4} -> {dest}");
@@ -497,7 +529,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            int val = bus.Read<int>(addr);
+            int val = Bus.Read<int>(addr);
             SetReg(dest, val);
 
             LogInstr("LW", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X8} -> {dest}");
@@ -510,7 +542,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            long val = bus.Read<long>(addr);
+            long val = Bus.Read<long>(addr);
             SetReg(dest, val);
 
             LogInstr("LD", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> {dest}");
@@ -525,7 +557,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            int val = bus.Read<int>(addr);
+            int val = Bus.Read<int>(addr);
             COP1.SetFGR(dest, val);
 
             LogInstr("LWC1", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> FGR{dest}");
@@ -538,7 +570,7 @@ namespace Chroma64.Emulator.CPU
             short offset = (short)(instr & 0xFFFF);
             long baseAddr = GetReg(src);
             ulong addr = (ulong)(baseAddr + offset);
-            long val = bus.Read<long>(addr);
+            long val = Bus.Read<long>(addr);
             COP1.SetFGR(dest, val);
 
             LogInstr("LDC1", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> FGR{dest}");
@@ -558,7 +590,7 @@ namespace Chroma64.Emulator.CPU
             long baseAddr = GetReg(dest);
             ulong addr = (ulong)(baseAddr + offset);
             byte val = (byte)GetReg(src);
-            bus.Write(addr, val);
+            Bus.Write(addr, val);
 
             LogInstr("SB", $"{src} -> {val:X2} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
@@ -571,7 +603,7 @@ namespace Chroma64.Emulator.CPU
             long baseAddr = GetReg(dest);
             ulong addr = (ulong)(baseAddr + offset);
             short val = (short)GetReg(src);
-            bus.Write(addr, val);
+            Bus.Write(addr, val);
 
             LogInstr("SH", $"{src} -> {val:X4} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
@@ -584,7 +616,7 @@ namespace Chroma64.Emulator.CPU
             long baseAddr = GetReg(dest);
             ulong addr = (ulong)(baseAddr + offset);
             int val = (int)GetReg(src);
-            bus.Write(addr, val);
+            Bus.Write(addr, val);
 
             LogInstr("SW", $"{src} -> {val:X8} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
@@ -597,7 +629,7 @@ namespace Chroma64.Emulator.CPU
             long baseAddr = GetReg(dest);
             ulong addr = (ulong)(baseAddr + offset);
             long val = GetReg(src);
-            bus.Write(addr, val);
+            Bus.Write(addr, val);
 
             LogInstr("SD", $"{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
@@ -612,7 +644,7 @@ namespace Chroma64.Emulator.CPU
             long baseAddr = GetReg(dest);
             ulong addr = (ulong)(baseAddr + offset);
             int val = COP1.GetFGR<int>(src);
-            bus.Write(addr, val);
+            Bus.Write(addr, val);
 
             LogInstr("SWC1", $"FGR{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
@@ -625,7 +657,7 @@ namespace Chroma64.Emulator.CPU
             long baseAddr = GetReg(dest);
             ulong addr = (ulong)(baseAddr + offset);
             long val = COP1.GetFGR<long>(src);
-            bus.Write(addr, val);
+            Bus.Write(addr, val);
 
             LogInstr("SDC1", $"FGR{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
@@ -1489,6 +1521,8 @@ namespace Chroma64.Emulator.CPU
                 COP0.SetReg(COP0REG.Status, sr);
                 pc = (ulong)COP0.GetReg(COP0REG.EPC);
             }
+
+            LogInstr("ERET", $"{pc:X16} -> PC");
         }
 
     }
