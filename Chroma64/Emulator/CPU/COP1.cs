@@ -164,6 +164,13 @@ namespace Chroma64.Emulator.CPU
 
         #endregion
 
+        #region MUL Instructions
+
+        public void MUL_D(int op1, int op2, int dest) { SetFGR(dest, GetFGR<double>(op1) * GetFGR<double>(op2)); }
+        public void MUL_S(int op1, int op2, int dest) { SetFGR(dest, GetFGR<float>(op1) * GetFGR<float>(op2)); }
+
+        #endregion
+
         #region SUB Instructions
 
         public void SUB_D(int op1, int op2, int dest) { SetFGR(dest, GetFGR<double>(op1) - GetFGR<double>(op2)); }
