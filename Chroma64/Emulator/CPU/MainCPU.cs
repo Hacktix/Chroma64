@@ -78,7 +78,7 @@ namespace Chroma64.Emulator.CPU
                 { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 6, MIPS_BLEZ }, { 20, MIPS_BEQL }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ },
 
                 // Load Instructions
-                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 55, MIPS_LD },
+                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 39, MIPS_LWU }, { 55, MIPS_LD }, { 34, MIPS_LWL }, { 38, MIPS_LWR },
                 { 53, MIPS_LDC1 }, { 49, MIPS_LWC1 },
 
                 // Store Instructions
@@ -543,6 +543,19 @@ namespace Chroma64.Emulator.CPU
             LogInstr("LW", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X8} -> {dest}");
         }
 
+        void MIPS_LWU(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+            uint val = Bus.Read<uint>(addr);
+            SetReg(dest, val);
+
+            LogInstr("LWU", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X8} -> {dest}");
+        }
+
         void MIPS_LD(uint instr)
         {
             CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -554,6 +567,38 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, val);
 
             LogInstr("LD", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> {dest}");
+        }
+
+        void MIPS_LWL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+
+            uint word = Bus.Read<uint>(addr - (addr % 4));
+            uint sword = word << (int)(8 * (addr % 4));
+            long res = (int)(sword | (GetReg(dest) & ((1 << (8 * (int)(addr % 4))) - 1)));
+            SetReg(dest, res);
+
+            LogInstr("LWL", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {sword:X8} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_LWR(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+
+            uint word = Bus.Read<uint>(addr - (addr % 4));
+            uint sword = word >> (int)(8 * (3 - (addr % 4)));
+            long res = (int)(sword | (GetReg(dest) & ((addr % 4) == 3 ? 0 : (0xFFFFFFFF << (8 * ((int)(addr % 4) + 1))))));
+            SetReg(dest, res);
+
+            LogInstr("LWR", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {sword:X8} -> {res:X16} -> {dest}");
         }
 
         #region FPU Loads
