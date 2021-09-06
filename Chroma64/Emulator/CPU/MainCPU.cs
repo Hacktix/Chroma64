@@ -82,7 +82,7 @@ namespace Chroma64.Emulator.CPU
                 { 53, MIPS_LDC1 }, { 49, MIPS_LWC1 },
 
                 // Store Instructions
-                { 40, MIPS_SB }, { 41, MIPS_SH }, { 43, MIPS_SW }, { 63, MIPS_SD },
+                { 40, MIPS_SB }, { 41, MIPS_SH }, { 43, MIPS_SW }, { 63, MIPS_SD }, { 42, MIPS_SWL }, { 46, MIPS_SWR },
                 { 61, MIPS_SDC1 }, { 57, MIPS_SWC1 },
 
                 // Arithmetic Operations
@@ -685,6 +685,40 @@ namespace Chroma64.Emulator.CPU
             Bus.Write(addr, val);
 
             LogInstr("SD", $"{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
+
+        void MIPS_SWL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+
+            uint val = (uint)(GetReg(dest) & 0xFFFFFFFF);
+            uint sval = val >> 8 * (int)(addr % 4);
+            uint word = Bus.Read<uint>(addr - (addr % 4));
+            uint mword = word & (uint)(0xFFFFFFFFL << (8 * ((int)(4 - (addr % 4)))));
+            Bus.Write(addr - (addr % 4), sval | mword);
+
+            LogInstr("SWL", $"{src} -> {sval | mword:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
+        }
+
+        void MIPS_SWR(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+
+            uint val = (uint)(GetReg(dest) & 0xFFFFFFFF);
+            uint sval = val << (8 * ((int)(3 - (addr % 4))));
+            uint word = Bus.Read<uint>(addr - (addr % 4));
+            uint mword = word & (uint)((1L << (8 * ((int)(3 - addr % 4)))) - 1);
+            Bus.Write(addr - (addr % 4), sval | mword);
+
+            LogInstr("SWR", $"{src} -> {sval | mword:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
         #region FPU Stores
