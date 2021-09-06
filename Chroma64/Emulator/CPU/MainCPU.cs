@@ -19,7 +19,7 @@ namespace Chroma64.Emulator.CPU
         private long hi;
         private long lo;
 
-        private ulong breakpoint = 0x8008b880;
+        private ulong breakpoint = 0;
         private bool debugging = false;
 
         public COP0 COP0;
@@ -171,7 +171,15 @@ namespace Chroma64.Emulator.CPU
                     {
                         uint opcode = (instr & 0xFC000000) >> 26;
                         CheckInstructionImplemented(instr, opcode, instrs);
-                        instrs[opcode](instr);
+                        try
+                        {
+                            instrs[opcode](instr);
+                        }
+                        catch(Exception e)
+                        {
+                            pc -= 4;
+                            Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16} (Exception: {e.Message})");
+                        }
                     }
                 }
                 else
