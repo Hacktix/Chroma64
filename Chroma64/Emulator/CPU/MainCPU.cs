@@ -112,7 +112,7 @@ namespace Chroma64.Emulator.CPU
 
             instrsRegimm = new Dictionary<uint, Action<uint>>()
             {
-                { 1, MIPS_BGEZ }, { 3, MIPS_BGEZL }, { 17, MIPS_BGEZAL },
+                { 0, MIPS_BLTZ }, { 1, MIPS_BGEZ }, { 3, MIPS_BGEZL }, { 17, MIPS_BGEZAL },
             };
 
             instrsCOP0 = new Dictionary<uint, Action<uint>>()
@@ -151,6 +151,22 @@ namespace Chroma64.Emulator.CPU
             for (int i = 0; i < cycles; i++)
             {
                 CheckBreakpoint();
+
+                // Update VI_CURRENT
+                if (Bus.VI.NeedsRender())
+                {
+                    if (i % (cycles / 524) == 0)
+                    {
+                        uint cur = Bus.VI.GetRegister(IO.VI.CURRENT_REG) + 1;
+                        if (cur == 524)
+                            cur = 0;
+                        Bus.VI.SetRegister(IO.VI.CURRENT_REG, cur);
+
+                        if(cur / 2 == Bus.VI.GetRegister(IO.VI.INTR_REG) / 2)
+                            Bus.MI.SetRegister(IO.MI.INTR_REG, Bus.MI.GetRegister(IO.MI.INTR_REG) | 0b1000);
+                    }
+                }
+                
 
                 // Tick COP0 registers
                 COP0.Tick();
@@ -1223,6 +1239,22 @@ namespace Chroma64.Emulator.CPU
         #endregion
 
         #region REGIMM Instructions
+
+        void MIPS_BLTZ(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val < 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+
+            LogInstr("BLTZ", $"{src} < 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
 
         void MIPS_BGEZ(uint instr)
         {

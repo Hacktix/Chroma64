@@ -24,12 +24,6 @@ namespace Chroma64.Emulator
         {
             cpu.Tick(TICKS_PER_FRAME);
 
-            // VI Interrupt
-            if(bus.VI.NeedsRender())
-            {
-                bus.MI.SetRegister(IO.MI.INTR_REG, bus.MI.GetRegister(IO.MI.INTR_REG) | 0b1000);
-            }
-
             // TODO: Tick components here
         }
 
