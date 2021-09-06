@@ -25,7 +25,7 @@ namespace Chroma64.Emulator.Memory
             RI = new RDRAMInterface();
             PI = new PeripheralInterface(this);
             MI = new MIPSInterface();
-            SI = new SerialInterface();
+            SI = new SerialInterface(this);
             AI = new AudioInterface();
             PIFRAM = new PIFRAM();
             VI = new VideoInterface(this);

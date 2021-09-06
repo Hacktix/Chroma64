@@ -1,4 +1,5 @@
 ﻿using Chroma64.Emulator.Memory;
+using Chroma64.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,12 @@ namespace Chroma64.Emulator.IO
 
     class SerialInterface : BigEndianMemory
     {
-        public SerialInterface() : base(0x1C) { }
+        private MemoryBus bus;
+
+        public SerialInterface(MemoryBus bus) : base(0x1C)
+        {
+            this.bus = bus;
+        }
         public new T Read<T>(ulong addr) where T : unmanaged
         {
             // Addresses over 0x1B are unused
@@ -30,6 +36,27 @@ namespace Chroma64.Emulator.IO
 
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
+            if (addr >= (ulong)SI.PIF_ADDR_RD64B_REG && addr < (ulong)SI.PIF_ADDR_RD64B_REG + 4)
+            {
+                ulong dest = (ulong)GetRegister(SI.DRAM_ADDR_REG);
+                Log.Info($"SI DMA to RDRAM:{dest:X6}");
+                for (ulong i = dest; i < dest + 64; i += sizeof(ulong))
+                    bus.Write(0x80000000 + i, ulong.MaxValue);
+                bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) | 0b10));
+            }
+
+            if (addr >= (ulong)SI.PIF_ADDR_WR64B_REG && addr < (ulong)SI.PIF_ADDR_WR64B_REG + 4)
+            {
+                ulong src = (ulong)GetRegister(SI.DRAM_ADDR_REG);
+                Log.Info($"SI DMA from RDRAM:{src:X6}");
+                bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) | 0b10));
+            }
+
+            if (addr >= (ulong)SI.STATUS_REG && addr < (ulong)SI.STATUS_REG + 4)
+            {
+                bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) & ~0b10));
+            }
+
             // Addresses over 0x1B are unused
             if (addr > 0x1B)
                 return;

@@ -98,7 +98,7 @@ namespace Chroma64.Emulator.CPU
             instrsSpecial = new Dictionary<uint, Action<uint>>()
             {
                 // Bitwise Operations
-                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 39, MIPS_NOR }, { 2, MIPS_SRL }, { 3, MIPS_SRA }, { 6, MIPS_SRLV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV }, { 56, MIPS_DSLL }, { 60, MIPS_DSLL32 },
+                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 39, MIPS_NOR }, { 2, MIPS_SRL }, { 3, MIPS_SRA }, { 6, MIPS_SRLV }, { 7, MIPS_SRAV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV }, { 56, MIPS_DSLL }, { 60, MIPS_DSLL32 },
 
                 // Arithmetic Operations
                 { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 26, MIPS_DIV }, { 27, MIPS_DIVU }, { 44, MIPS_DADD },
@@ -952,6 +952,19 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, res);
 
             LogInstr("SRLV", $"{src} >> {op} -> {val:X16} >> {shift:X} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_SRAV(uint instr)
+        {
+            CPUREG op = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            int val = (int)GetReg(src);
+            int shift = (int)(GetReg(op) & 0x1F);
+            long res = val >> shift;
+            SetReg(dest, res);
+
+            LogInstr("SRAV", $"{src} >> {op} -> {val:X16} >> {shift:X} -> {res:X16} -> {dest}");
         }
 
         void MIPS_SLL(uint instr)
