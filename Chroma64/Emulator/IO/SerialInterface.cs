@@ -43,18 +43,29 @@ namespace Chroma64.Emulator.IO
                 for (ulong i = dest; i < dest + 64; i += sizeof(ulong))
                     bus.Write(0x80000000 + i, ulong.MaxValue);
                 bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) | 0b10));
+                SetRegister(SI.STATUS_REG, 1 << 12);
+                return;
             }
 
             if (addr >= (ulong)SI.PIF_ADDR_WR64B_REG && addr < (ulong)SI.PIF_ADDR_WR64B_REG + 4)
             {
                 ulong src = (ulong)GetRegister(SI.DRAM_ADDR_REG);
-                Log.Info($"SI DMA from RDRAM:{src:X6}");
+
+                string data = "";
+                for (ulong i = src; i < src + 64; i += sizeof(ulong))
+                    data += $"{bus.Read<ulong>(0x80000000 + i):X16}";
+
+                Log.Info($"SI DMA from RDRAM:{src:X6} | Data: ${data}");
                 bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) | 0b10));
+                SetRegister(SI.STATUS_REG, 1 << 12);
+                return;
             }
 
             if (addr >= (ulong)SI.STATUS_REG && addr < (ulong)SI.STATUS_REG + 4)
             {
                 bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) & ~0b10));
+                SetRegister(SI.STATUS_REG, 0);
+                return;
             }
 
             // Addresses over 0x1B are unused

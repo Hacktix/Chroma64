@@ -104,7 +104,7 @@ namespace Chroma64.Emulator.CPU
                 { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 26, MIPS_DIV }, { 27, MIPS_DIVU }, { 44, MIPS_DADD },
 
                 // Control Flow
-                { 8, MIPS_JR },
+                { 8, MIPS_JR }, { 9, MIPS_JALR },
 
                 // Misc.
                 { 42, MIPS_SLT }, { 43, MIPS_SLTU }, { 18, MIPS_MFLO }, { 16, MIPS_MFHI }, { 19, MIPS_MTLO }, { 17, MIPS_MTHI },
@@ -135,6 +135,7 @@ namespace Chroma64.Emulator.CPU
                 { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_W_FMT },
                 { 9, MIPS_TRUNC_L_FMT }, { 13, MIPS_TRUNC_W_FMT },
                 { 5, MIPS_ABS_FMT }, { 0, MIPS_ADD_FMT }, { 1, MIPS_SUB_FMT }, { 3, MIPS_DIV_FMT },
+                { 6, MIPS_MOV_FMT },
             };
             for (uint i = 0b110000; i < 0x3F; i++)
                 instrsFPU.Add(i, MIPS_C_COND_FMT);
@@ -1142,6 +1143,16 @@ namespace Chroma64.Emulator.CPU
             LogInstr("JR", $"{branchTarget:X16} -> PC");
         }
 
+        void MIPS_JALR(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            SetReg(CPUREG.RA, (long)pc + 4);
+            branchQueued = 2;
+            branchTarget = (ulong)GetReg(src);
+
+            LogInstr("JALR", $"{branchTarget:X16} -> PC");
+        }
+
         #endregion
 
         #region Misc.
@@ -1536,6 +1547,14 @@ namespace Chroma64.Emulator.CPU
                     Log.FatalError($"C.cond.fmt : Unimplemented condition {cond:X1} in instruction {instr:X8}");
                     break;
             }
+        }
+
+        void MIPS_MOV_FMT(uint instr)
+        {
+            int dest = (int)((instr & (0x1F << 6)) >> 6);
+            int src = (int)((instr & (0x1F << 11)) >> 11);
+            int fmt = (int)((instr & (0x1F << 21)) >> 21);
+            COP1.SetFGR(dest, COP1.GetFGR<ulong>(src));
         }
 
         #endregion

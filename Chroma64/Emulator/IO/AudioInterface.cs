@@ -20,7 +20,10 @@ namespace Chroma64.Emulator.IO
 
     class AudioInterface : BigEndianMemory
     {
-        public AudioInterface() : base(0x18) { }
+        public AudioInterface() : base(0x18) {
+            SetRegister(AI.STATUS_REG, 0xC0000001);
+        }
+
         public new T Read<T>(ulong addr) where T : unmanaged
         {
             // Addresses over 0x17 are unused
@@ -32,6 +35,9 @@ namespace Chroma64.Emulator.IO
 
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
+            if (addr >= (ulong)AI.STATUS_REG && addr < (ulong)AI.STATUS_REG + 4)
+                return;
+
             // Addresses over 0x17 are unused
             if (addr > 0x17)
                 return;
