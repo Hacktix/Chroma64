@@ -153,29 +153,23 @@ namespace Chroma64.Emulator.CPU
                 CheckBreakpoint();
 
                 // Update VI_CURRENT
-                if (Bus.VI.NeedsRender())
+                if (i % (cycles / 262) == 0)
                 {
-                    if (i % (cycles / 262) == 0)
-                    {
-                        uint cur = Bus.VI.GetRegister(IO.VI.CURRENT_REG) + 2;
-                        if (cur == 524)
-                            cur = 0;
-                        Bus.VI.SetRegister(IO.VI.CURRENT_REG, cur);
+                    uint cur = Bus.VI.GetRegister(IO.VI.CURRENT_REG) + 2;
+                    if (cur == 524)
+                        cur = 0;
+                    Bus.VI.SetRegister(IO.VI.CURRENT_REG, cur);
 
-                        if (cur / 2 == Bus.VI.GetRegister(IO.VI.INTR_REG) / 2)
-                        {
-                            Log.Info("Raising VI Interrupt");
-                            Bus.MI.SetRegister(IO.MI.INTR_REG, Bus.MI.GetRegister(IO.MI.INTR_REG) | 0b1000);
-                        }
-                    }
+                    if (cur / 2 == Bus.VI.GetRegister(IO.VI.INTR_REG) / 2)
+                        Bus.MI.SetRegister(IO.MI.INTR_REG, Bus.MI.GetRegister(IO.MI.INTR_REG) | 0b1000);
                 }
-                
+
 
                 // Tick COP0 registers
                 COP0.Tick();
 
                 // Check Interrupts
-                if(((COP0.GetReg(COP0REG.Status) & 0b111) == 0b001) && ((COP0.GetReg(COP0REG.Cause) & (COP0.GetReg(COP0REG.Status) & 0xFF00)) != 0))
+                if (((COP0.GetReg(COP0REG.Status) & 0b111) == 0b001) && ((COP0.GetReg(COP0REG.Cause) & (COP0.GetReg(COP0REG.Status) & 0xFF00)) != 0))
                     TriggerException(0);
 
                 // Fetch & increment PC
@@ -195,7 +189,7 @@ namespace Chroma64.Emulator.CPU
                         {
                             instrs[opcode](instr);
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             pc -= 4;
                             Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16} (Exception: {e.Message})");

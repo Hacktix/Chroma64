@@ -33,7 +33,6 @@ namespace Chroma64.Emulator.CPU
             if (reg == COP0REG.Compare)
             {
                 Registers[(int)COP0REG.Cause] &= ~(1 << 15);
-                Log.Info("Lowering Count/Compare Interrupt");
             }
 
             Registers[(int)reg] = value & 0xFFFFFFFF;
@@ -53,7 +52,7 @@ namespace Chroma64.Emulator.CPU
             uint intr = parent.Bus.MI.GetRegister(IO.MI.INTR_REG);
             uint intr_mask = parent.Bus.MI.GetRegister(IO.MI.INTR_MASK_REG);
 
-            if((intr & intr_mask) != 0)
+            if ((intr & intr_mask) != 0)
                 Registers[(int)COP0REG.Cause] |= 1 << 10;
             else
                 Registers[(int)COP0REG.Cause] &= ~(1 << 10);
@@ -61,10 +60,7 @@ namespace Chroma64.Emulator.CPU
             count++;
             Registers[(int)COP0REG.Count] = (count >> 1) & 0xFFFFFFFF;
             if ((Registers[(int)COP0REG.Count] & 0xFFFFFFFF) == (Registers[(int)COP0REG.Compare] & 0xFFFFFFFF))
-            {
-                Log.Info("Raising Count/Compare Interrupt");
                 Registers[(int)COP0REG.Cause] |= 1 << 15;
-            }
         }
     }
 }

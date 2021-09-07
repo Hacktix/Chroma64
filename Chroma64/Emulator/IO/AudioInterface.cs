@@ -20,7 +20,8 @@ namespace Chroma64.Emulator.IO
 
     class AudioInterface : BigEndianMemory
     {
-        public AudioInterface() : base(0x18) {
+        public AudioInterface() : base(0x18)
+        {
             SetRegister(AI.STATUS_REG, 0xC0000001);
         }
 
