@@ -24,7 +24,7 @@ namespace Chroma64.Emulator.IO
         {
             // MI_INTR_MASK_REG
             if (addr >= 0xC && addr <= 0xF)
-                fixed(uint* ptr = &intr_mask) return *(T*)ptr;
+                fixed (uint* ptr = &intr_mask) return *(T*)ptr;
 
             // Addresses over 0xF are unused
             if (addr > 0xF)
@@ -41,7 +41,7 @@ namespace Chroma64.Emulator.IO
                 base.Write(addr, val);
                 uint maskChange = base.Read<uint>(0xC);
                 intr_mask = 0;
-                for(int i = 0; i < 6; i++)
+                for (int i = 0; i < 6; i++)
                 {
                     if ((maskChange & 2) != 0)
                         intr_mask |= (uint)(1 << i);

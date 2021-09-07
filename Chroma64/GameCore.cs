@@ -34,7 +34,14 @@ namespace Chroma64
                 {
                     emu.SetFramebufferTexture(ref _tex);
                     _tex.Flush();
-                    context.DrawTexture(_tex, Vector2.Zero);
+                    context.DrawTexture(
+                        _tex,
+                        Vector2.Zero,
+                        new Vector2(
+                            (float)Window.Size.Width / _tex.Width,
+                            (float)Window.Size.Height / _tex.Height
+                        )
+                    );
                 }
             }
         }

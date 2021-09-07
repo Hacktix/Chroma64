@@ -98,20 +98,6 @@ namespace Chroma64.Emulator.Memory
         {
             addr = GetPhysicalAddress(addr & 0xFFFFFFFF);
 
-            unsafe
-            {
-                if ((addr - (ulong)sizeof(T)) >= 0x80113808 && addr < 0x80113808)
-                    Log.Info($"WRITE!!!! {val:X} to {addr:X8}");
-            }
-
-            int width = (int)(VI.GetRegister(IO.VI.WIDTH_REG) & 0xFFF);
-            int yScale = (int)VI.GetRegister(IO.VI.Y_SCALE_REG);
-            int height = ((15 * yScale) / 64);
-            if (addr >= VI.GetRegister(IO.VI.ORIGIN_REG) && addr <= (ulong)(VI.GetRegister(IO.VI.ORIGIN_REG) + 2 * width * height))
-            {
-                Log.Info($"Wrote {val:X} to Framebuffer @ {addr:X8}");
-            }
-
             // RDRAM (Built-in)
             if (addr >= 0x00000000 && addr <= 0x003FFFFF)
                 RDRAM.Write(addr & 0x3FFFFF, val);
