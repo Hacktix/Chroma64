@@ -19,7 +19,7 @@ namespace Chroma64.Emulator.CPU
         private long hi;
         private long lo;
 
-        private ulong breakpoint = 0x80090C80;
+        private ulong breakpoint = 0;
         private bool debugging = false;
 
         public COP0 COP0;
@@ -523,7 +523,7 @@ namespace Chroma64.Emulator.CPU
             byte val = Bus.Read<byte>(addr);
             SetReg(dest, val);
 
-            LogInstr("LB", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X2} -> {dest}");
+            LogInstr("LBU", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X2} -> {dest}");
         }
 
         void MIPS_LH(uint instr)
@@ -1166,8 +1166,9 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_JALR(uint instr)
         {
-            CPUREG src = (CPUREG)((instr & (0x1F << 11)) >> 11);
-            SetReg(CPUREG.RA, (long)pc + 4);
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            SetReg(dest, (long)pc + 4);
             branchQueued = 2;
             branchTarget = (ulong)GetReg(src);
 
@@ -1322,7 +1323,7 @@ namespace Chroma64.Emulator.CPU
         {
             COP0REG dest = (COP0REG)((instr & (0x1F << 11)) >> 11);
             CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            COP0.SetReg(dest, GetReg(src));
+            COP0.SetReg(dest, (int)GetReg(src));
 
             LogInstr("MTC0", $"{src} -> {GetReg(src):X16} -> {dest}");
         }
@@ -1331,7 +1332,7 @@ namespace Chroma64.Emulator.CPU
         {
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             COP0REG src = (COP0REG)((instr & (0x1F << 11)) >> 11);
-            SetReg(dest, COP0.GetReg(src));
+            SetReg(dest, (int)COP0.GetReg(src));
 
             LogInstr("MFC0", $"{src} -> {COP0.GetReg(src):X16} -> {dest}");
         }
@@ -1353,7 +1354,7 @@ namespace Chroma64.Emulator.CPU
         {
             int dest = (int)((instr & (0x1F << 11)) >> 11);
             CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
-            COP1.SetFGR(dest, GetReg(src));
+            COP1.SetFGR(dest, (int)GetReg(src));
 
             LogInstr("MTC1", $"{src} -> {GetReg(src):X16} -> {dest}");
         }
