@@ -54,9 +54,9 @@ namespace Chroma64.Emulator.IO
                 ulong src = (ulong)GetRegister(SI.DRAM_ADDR_REG);
 
                 string data = "";
-                Log.Info($"SI DMA from RDRAM:{src:X6} | Data: ${data}");
                 for (ulong i = src; i < src + 64; i += sizeof(ulong))
                     data += $"{bus.Read<ulong>(0x80000000 + i):X16}";
+                Log.Info($"SI DMA from RDRAM:{src:X6} | Data: ${data}");
 
                 Log.Info("Raising SI Interrupt");
                 bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) | 0b10));
