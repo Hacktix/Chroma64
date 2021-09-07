@@ -19,7 +19,7 @@ namespace Chroma64.Emulator.CPU
         private long hi;
         private long lo;
 
-        private ulong breakpoint = 0;
+        private ulong breakpoint = 0x80090C80;
         private bool debugging = false;
 
         public COP0 COP0;
@@ -155,15 +155,18 @@ namespace Chroma64.Emulator.CPU
                 // Update VI_CURRENT
                 if (Bus.VI.NeedsRender())
                 {
-                    if (i % (cycles / 524) == 0)
+                    if (i % (cycles / 262) == 0)
                     {
-                        uint cur = Bus.VI.GetRegister(IO.VI.CURRENT_REG) + 1;
+                        uint cur = Bus.VI.GetRegister(IO.VI.CURRENT_REG) + 2;
                         if (cur == 524)
                             cur = 0;
                         Bus.VI.SetRegister(IO.VI.CURRENT_REG, cur);
 
-                        if(cur / 2 == Bus.VI.GetRegister(IO.VI.INTR_REG) / 2)
+                        if (cur / 2 == Bus.VI.GetRegister(IO.VI.INTR_REG) / 2)
+                        {
+                            Log.Info("Raising VI Interrupt");
                             Bus.MI.SetRegister(IO.MI.INTR_REG, Bus.MI.GetRegister(IO.MI.INTR_REG) | 0b1000);
+                        }
                     }
                 }
                 
@@ -230,6 +233,8 @@ namespace Chroma64.Emulator.CPU
             else
                 pc = 0xBFC00380;
 
+            //Log.Info($"Exception with code {exceptionCode}, jumping to 0x{pc:X8}");
+
             branchQueued = 0;
         }
 
@@ -239,7 +244,7 @@ namespace Chroma64.Emulator.CPU
         {
             if (debugging)
             {
-                Log.Info($"[PC = 0x{(pc - 4) & 0xFFFFFFFF:X8}] {instr.PadRight(6)} : {msg}");
+                Log.Info($"[PC = 0x{(pc - 4) & 0xFFFFFFFF:X8}] [INSTR:0x{Bus.Read<uint>(pc - 4):X8}] {instr.PadRight(6)} : {msg}");
                 var input = Console.ReadKey();
                 if (input.Key == ConsoleKey.Enter)
                     debugging = false;
@@ -778,7 +783,7 @@ namespace Chroma64.Emulator.CPU
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = (short)(instr & 0xFFFF);
             long regval = GetReg(src);
-            int res = (int)(regval + val);
+            long res = (int)(regval + val);
             SetReg(dest, res);
 
             LogInstr("ADDIU", $"{src} -> {regval:X16} + {val:X16} -> {res:X16} -> {dest}");
@@ -790,7 +795,7 @@ namespace Chroma64.Emulator.CPU
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = (short)(instr & 0xFFFF);
             long regval = GetReg(src);
-            int res = (int)(regval + val);
+            long res = (int)(regval + val);
             SetReg(dest, res);
 
             LogInstr("ADDI", $"{src} -> {regval:X16} + {val:X16} -> {res:X16} -> {dest}");
@@ -918,7 +923,7 @@ namespace Chroma64.Emulator.CPU
             long res = (~val1) & (~val2);
             SetReg(dest, res);
 
-            LogInstr("OR", $"~{op1} & ~{op2} -> ~{val1:X16} & ~{val2:X16} -> {res:X16} -> {dest}");
+            LogInstr("NOR", $"~{op1} & ~{op2} -> ~{val1:X16} & ~{val2:X16} -> {res:X16} -> {dest}");
         }
 
         void MIPS_XOR(uint instr)
@@ -1043,7 +1048,7 @@ namespace Chroma64.Emulator.CPU
             CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
             int val1 = (int)GetReg(op1);
             int val2 = (int)GetReg(op2);
-            int res = val1 + val2;
+            long res = (int)(val1 + val2);
             SetReg(dest, res);
 
             LogInstr("ADD", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
@@ -1056,7 +1061,7 @@ namespace Chroma64.Emulator.CPU
             CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
             int val1 = (int)GetReg(op1);
             int val2 = (int)GetReg(op2);
-            int res = val1 + val2;
+            long res = (int)(val1 + val2);
             SetReg(dest, res);
 
             LogInstr("ADDU", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
@@ -1069,7 +1074,7 @@ namespace Chroma64.Emulator.CPU
             CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
             int val1 = (int)GetReg(op1);
             int val2 = (int)GetReg(op2);
-            int res = val1 - val2;
+            long res = (int)(val1 - val2);
             SetReg(dest, res);
 
             LogInstr("SUBU", $"{op1} - {op2} -> {val1:X16} - {val2:X16} -> {res:X16} -> {dest}");
