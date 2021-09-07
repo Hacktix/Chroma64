@@ -49,6 +49,7 @@ namespace Chroma64.Emulator.IO
         {
             if(addr >= (ulong)VI.CURRENT_REG && addr < (ulong)VI.CURRENT_REG + 4)
             {
+                Log.Info("Lowering VI Interrupt");
                 bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) & ~0b1000));
                 return;
             }
@@ -78,7 +79,7 @@ namespace Chroma64.Emulator.IO
         public void SetFramebuffer(ref Texture tex)
         {
             int width = (int)(GetRegister(VI.WIDTH_REG) & 0xFFF);
-            int yScale = (int)GetRegister(VI.Y_SCALE_REG);
+            int yScale = (int)(GetRegister(VI.Y_SCALE_REG) & 0xFFF);
             int height = ((15 * yScale) / 64);
 
             int origin = (int)(GetRegister(VI.DRAM_ADDR_REG) & 0x3FFFFF);
@@ -106,7 +107,7 @@ namespace Chroma64.Emulator.IO
             }*/
 
             if (tex == null || tex.Width != width || tex.Height != height)
-                tex = new Texture(width, height, PixelFormat.RGBA);
+                tex = new Texture((int)width, (int)height, PixelFormat.RGBA);
             tex.SetPixelData(data);
         }
     }

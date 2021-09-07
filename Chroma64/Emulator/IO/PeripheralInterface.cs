@@ -49,8 +49,11 @@ namespace Chroma64.Emulator.IO
             if (addr >= (ulong)PI.STATUS_REG && addr < (ulong)(PI.STATUS_REG + 4))
             {
                 base.Write<T>(addr, val);
-                if((base.Read<int>((ulong)PI.STATUS_REG) & 2) != 0)
+                if ((base.Read<int>((ulong)PI.STATUS_REG) & 2) != 0)
+                {
+                    Log.Info("Lowering PI Interrupt");
                     bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) & ~0b10000));
+                }
             }
 
             if (addr >= (ulong)PI.WR_LEN_REG && addr < (ulong)(PI.WR_LEN_REG + 4))
@@ -63,6 +66,7 @@ namespace Chroma64.Emulator.IO
                 Array.Copy(bus.ROM.Bytes, bus.ROM.Bytes.Length - srcAddr - len,
                     bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - destAddr - len, len);
 
+                Log.Info("Raising PI Interrupt");
                 bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) | 0b10000));
 
                 Log.Info($"PI DMA from ROM:{srcAddr:X8} to RDRAM:{destAddr:X8} with length {len:X}");
