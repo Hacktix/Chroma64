@@ -97,10 +97,10 @@ namespace Chroma64.Emulator.IO
             }
             else
             {
-                byte[] data = new byte[width * height * 4];
+                byte[] data = new byte[width * height * 3];
                 byte[] tmpData = new byte[width * height * 2];
                 Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - origin - tmpData.Length, tmpData, 0, tmpData.Length);
-                Array.Reverse(data);
+                Array.Reverse(tmpData);
 
                 int dataCnt = 0;
                 int zeroCnt = 0;
@@ -109,14 +109,13 @@ namespace Chroma64.Emulator.IO
                     short color = (short)((tmpData[i] << 8) | tmpData[i + 1]);
                     if (color != 0)
                         zeroCnt++;
-                    data[dataCnt++] = (byte)(255 * ((double)0x1F / ((color & (0x1F << 11)) >> 11)));
-                    data[dataCnt++] = (byte)(255 * ((double)0x1F / ((color & (0x1F << 6)) >> 6)));
-                    data[dataCnt++] = (byte)(255 * ((double)0x1F / ((color & (0x1F << 1)) >> 1)));
-                    data[dataCnt++] = 255;
+                    data[dataCnt++] = (byte)(255 * ((double)((color & (0x1F << 11)) >> 11) / 0x1F));
+                    data[dataCnt++] = (byte)(255 * ((double)((color & (0x1F << 6)) >> 6) / 0x1F));
+                    data[dataCnt++] = (byte)(255 * ((double)((color & (0x1F << 1)) >> 1) / 0x1F));
                 }
 
                 if (tex == null || tex.Width != width || tex.Height != height)
-                    tex = new Texture((int)width, (int)height, PixelFormat.RGBA);
+                    tex = new Texture((int)width, (int)height, PixelFormat.RGB);
                 tex.SetPixelData(data);
             }
         }

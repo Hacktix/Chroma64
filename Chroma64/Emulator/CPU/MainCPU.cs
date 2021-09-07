@@ -75,7 +75,7 @@ namespace Chroma64.Emulator.CPU
                 { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
 
                 // Branch Instructions
-                { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 6, MIPS_BLEZ }, { 20, MIPS_BEQL }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ },
+                { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 6, MIPS_BLEZ }, { 20, MIPS_BEQL }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ }, { 23, MIPS_BGTZL },
 
                 // Load Instructions
                 { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 39, MIPS_LWU }, { 55, MIPS_LD }, { 34, MIPS_LWL }, { 38, MIPS_LWR }, { 26, MIPS_LDL }, { 27, MIPS_LDR },
@@ -112,7 +112,7 @@ namespace Chroma64.Emulator.CPU
 
             instrsRegimm = new Dictionary<uint, Action<uint>>()
             {
-                { 0, MIPS_BLTZ }, { 1, MIPS_BGEZ }, { 3, MIPS_BGEZL }, { 17, MIPS_BGEZAL },
+                { 0, MIPS_BLTZ }, { 1, MIPS_BGEZ }, { 2, MIPS_BLTZL }, { 3, MIPS_BGEZL }, { 17, MIPS_BGEZAL },
             };
 
             instrsCOP0 = new Dictionary<uint, Action<uint>>()
@@ -469,6 +469,24 @@ namespace Chroma64.Emulator.CPU
             }
 
             LogInstr("BGTZ", $"{src} > 0 -> {val:X16} > 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
+        void MIPS_BGTZL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val > 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
+
+            LogInstr("BGTZL", $"{src} > 0 -> {val:X16} > 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
         void MIPS_BLEZ(uint instr)
@@ -1292,6 +1310,24 @@ namespace Chroma64.Emulator.CPU
             }
 
             LogInstr("BLTZ", $"{src} < 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
+        void MIPS_BLTZL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val < 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
+
+            LogInstr("BLTZL", $"{src} < 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
         void MIPS_BGEZ(uint instr)
