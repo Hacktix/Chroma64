@@ -78,7 +78,7 @@ namespace Chroma64.Emulator.CPU
                 { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 6, MIPS_BLEZ }, { 20, MIPS_BEQL }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ },
 
                 // Load Instructions
-                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 39, MIPS_LWU }, { 55, MIPS_LD }, { 34, MIPS_LWL }, { 38, MIPS_LWR },
+                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 39, MIPS_LWU }, { 55, MIPS_LD }, { 34, MIPS_LWL }, { 38, MIPS_LWR }, { 26, MIPS_LDL }, { 27, MIPS_LDR },
                 { 53, MIPS_LDC1 }, { 49, MIPS_LWC1 },
 
                 // Store Instructions
@@ -621,6 +621,38 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, res);
 
             LogInstr("LWR", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {sword:X8} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_LDL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+
+            ulong dword = Bus.Read<ulong>(addr - (addr % 8));
+            ulong sdword = dword << (int)(8 * (addr % 8));
+            long res = (long)sdword | (GetReg(dest) & ((1L << (8 * ((int)(addr % 8)))) - 1));
+            SetReg(dest, res);
+
+            LogInstr("LDL", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {sdword:X8} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_LDR(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            short offset = (short)(instr & 0xFFFF);
+            long baseAddr = GetReg(src);
+            ulong addr = (ulong)(baseAddr + offset);
+
+            ulong dword = Bus.Read<ulong>(addr - (addr % 8));
+            ulong sdword = dword >> (int)(8 * (7 - (addr % 8)));
+            long res = (long)sdword | (long)((ulong)GetReg(dest) & ((addr % 8) == 7 ? 0 : (0xFFFFFFFFFFFFFFFF << (8 * ((int)(addr % 8) + 1)))));
+            SetReg(dest, res);
+
+            LogInstr("LDR", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {sdword:X16} -> {res:X16} -> {dest}");
         }
 
         #region FPU Loads
