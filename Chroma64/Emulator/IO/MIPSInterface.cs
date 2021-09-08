@@ -19,7 +19,8 @@ namespace Chroma64.Emulator.IO
         private uint intr_mask = 0;
         private MemoryBus bus;
 
-        public MIPSInterface(MemoryBus bus) : base(0x10) {
+        public MIPSInterface(MemoryBus bus) : base(0x10)
+        {
             this.bus = bus;
         }
 
