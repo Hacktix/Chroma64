@@ -46,6 +46,7 @@ namespace Chroma64.Emulator.CPU
             this.Bus = bus;
             COP0 = new COP0(this);
             COP1 = new COP1(this);
+            bus.CPU = this;
 
             // # Simulating the PIF ROM
 
@@ -224,21 +225,10 @@ namespace Chroma64.Emulator.CPU
                 // DEBUG Build Only: Check if Breakpoint is reached
                 CheckBreakpoint();
 
-                // Update VI_CURRENT
-                if (i % (cycles / 262) == 0)
-                {
-                    uint cur = Bus.VI.GetRegister(IO.VI.CURRENT_REG) + 2;
-                    if (cur == 524)
-                        cur = 0;
-                    Bus.VI.SetRegister(IO.VI.CURRENT_REG, cur);
-
-                    if (cur / 2 == Bus.VI.GetRegister(IO.VI.INTR_REG) / 2)
-                        Bus.MI.SetRegister(IO.MI.INTR_REG, Bus.MI.GetRegister(IO.MI.INTR_REG) | 0b1000);
-                }
-
-
-                // Tick COP0 registers
+                // Tick other hardware registers
                 COP0.Tick();
+                if((i & 1) == 0)
+                    Bus.VI.Tick();
 
                 // Check Interrupts
                 if (((COP0.GetReg(COP0REG.Status) & 0b111) == 0b001) && ((COP0.GetReg(COP0REG.Cause) & (COP0.GetReg(COP0REG.Status) & 0xFF00)) != 0))

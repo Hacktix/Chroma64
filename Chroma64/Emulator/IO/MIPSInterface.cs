@@ -1,5 +1,4 @@
 ﻿using Chroma64.Emulator.Memory;
-using Chroma64.Util;
 using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.IO
@@ -18,8 +17,11 @@ namespace Chroma64.Emulator.IO
     class MIPSInterface : BigEndianMemory
     {
         private uint intr_mask = 0;
+        private MemoryBus bus;
 
-        public MIPSInterface() : base(0x10) { }
+        public MIPSInterface(MemoryBus bus) : base(0x10) {
+            this.bus = bus;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new unsafe T Read<T>(ulong addr) where T : unmanaged
@@ -50,6 +52,7 @@ namespace Chroma64.Emulator.IO
                         intr_mask |= (uint)(1 << i);
                     maskChange >>= 2;
                 }
+                UpdateInterruptState();
             }
 
             // Addresses over 0xF are unused
@@ -69,6 +72,20 @@ namespace Chroma64.Emulator.IO
         public void SetRegister(MI reg, uint value)
         {
             base.Write((ulong)reg, value);
+
+            if (reg == MI.INTR_REG)
+                UpdateInterruptState();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UpdateInterruptState()
+        {
+            uint intr = GetRegister(MI.INTR_REG);
+
+            if ((intr & intr_mask) != 0)
+                bus.CPU.COP0.SetReg(CPU.COP0REG.Cause, bus.CPU.COP0.GetReg(CPU.COP0REG.Cause) | (1 << 10));
+            else
+                bus.CPU.COP0.SetReg(CPU.COP0REG.Cause, bus.CPU.COP0.GetReg(CPU.COP0REG.Cause) & ~(1 << 10));
         }
     }
 }

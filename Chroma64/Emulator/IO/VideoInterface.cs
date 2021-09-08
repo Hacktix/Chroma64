@@ -1,12 +1,7 @@
 ﻿using Chroma.Graphics;
 using Chroma64.Emulator.Memory;
-using Chroma64.Util;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chroma64.Emulator.IO
 {
@@ -30,7 +25,10 @@ namespace Chroma64.Emulator.IO
 
     class VideoInterface : BigEndianMemory
     {
+        private static readonly int VI_CURRENT_UPDATE_FREQ = 1562500 / 524;
+
         private MemoryBus bus;
+        private int viCurrentUpdate = VI_CURRENT_UPDATE_FREQ;
 
         public VideoInterface(MemoryBus bus) : base(0x38)
         {
@@ -73,6 +71,24 @@ namespace Chroma64.Emulator.IO
         public void SetRegister(VI reg, uint value)
         {
             base.Write((ulong)reg, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Tick()
+        {
+            // Update VI_CURRENT
+            if (--viCurrentUpdate == 0)
+            {
+                viCurrentUpdate = VI_CURRENT_UPDATE_FREQ;
+
+                uint cur = GetRegister(VI.CURRENT_REG) + 2;
+                if (cur == 524)
+                    cur = 0;
+                SetRegister(VI.CURRENT_REG, cur);
+
+                if (cur / 2 == GetRegister(VI.INTR_REG) / 2)
+                    bus.MI.SetRegister(MI.INTR_REG, bus.MI.GetRegister(MI.INTR_REG) | 0b1000);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

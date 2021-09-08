@@ -1,4 +1,5 @@
-﻿using Chroma64.Emulator.IO;
+﻿using Chroma64.Emulator.CPU;
+using Chroma64.Emulator.IO;
 using Chroma64.Util;
 using System.Runtime.CompilerServices;
 
@@ -20,12 +21,14 @@ namespace Chroma64.Emulator.Memory
         public ROM ROM;
         public PIFRAM PIFRAM;
 
+        public MainCPU CPU;
+
         public MemoryBus(ROM rom)
         {
             ROM = rom;
             RI = new RDRAMInterface();
             PI = new PeripheralInterface(this);
-            MI = new MIPSInterface();
+            MI = new MIPSInterface(this);
             SI = new SerialInterface(this);
             AI = new AudioInterface();
             PIFRAM = new PIFRAM();
