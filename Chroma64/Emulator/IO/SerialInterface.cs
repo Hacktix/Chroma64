@@ -39,13 +39,8 @@ namespace Chroma64.Emulator.IO
             if (addr >= (ulong)SI.PIF_ADDR_RD64B_REG && addr < (ulong)SI.PIF_ADDR_RD64B_REG + 4)
             {
                 ulong dest = (ulong)GetRegister(SI.DRAM_ADDR_REG);
-
-                Array.Reverse(bus.PIF.Bytes);
-                Log.Info($"PIF -> RDRAM:{dest:X6} | {BitConverter.ToString(bus.PIF.Bytes).Replace("-", "")}");
-                Array.Reverse(bus.PIF.Bytes);
-
+                bus.PIF.Exec();
                 Array.Copy(bus.PIF.Bytes, 0, bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - (int)dest - 64, 64);
-
                 bus.MI.SetRegister(MI.INTR_REG, bus.MI.GetRegister(MI.INTR_REG) | 0b10);
                 SetRegister(SI.STATUS_REG, 1 << 12);
                 return;
@@ -55,13 +50,6 @@ namespace Chroma64.Emulator.IO
             {
                 ulong src = GetRegister(SI.DRAM_ADDR_REG);
                 Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - (int)src - 64, bus.PIF.Bytes, 0, 64);
-
-                Array.Reverse(bus.PIF.Bytes);
-                Log.Info($"RDRAM:{src:X6} -> PIF | {BitConverter.ToString(bus.PIF.Bytes).Replace("-", "")}");
-                Array.Reverse(bus.PIF.Bytes);
-
-                bus.PIF.Exec();
-
                 bus.MI.SetRegister(MI.INTR_REG, bus.MI.GetRegister(MI.INTR_REG) | 0b10);
                 SetRegister(SI.STATUS_REG, 1 << 12);
                 return;

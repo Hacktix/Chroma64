@@ -1,15 +1,18 @@
 ﻿using Chroma64.Emulator.Memory;
 using Chroma64.Util;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chroma64.Emulator.IO
 {
+    public enum ControllerButton
+    {
+        A, B, Z, Start, Up, Down, Left, Right, LT, RT, UpC, DownC, LeftC, RightC
+    }
+
     class PIF : BigEndianMemory
     {
+        public bool[] ControllerState = new bool[14];
+
         public PIF() : base(0x40) { }
 
         public void Exec()
@@ -50,6 +53,34 @@ namespace Chroma64.Emulator.IO
                                 Bytes[--i] = 0x00;
                                 Bytes[--i] = 0x00;
                             }
+                            break;
+
+                        // TODO: Controller State
+                        case 0x01:
+                            Bytes[--i] = (byte)(
+                                (ControllerState[(int)ControllerButton.A] ? 0x80 : 0) |
+                                (ControllerState[(int)ControllerButton.B] ? 0x40 : 0) |
+                                (ControllerState[(int)ControllerButton.Z] ? 0x20 : 0) |
+                                (ControllerState[(int)ControllerButton.Start] ? 0x10 : 0) |
+                                (ControllerState[(int)ControllerButton.Up] ? 0x08 : 0) |
+                                (ControllerState[(int)ControllerButton.Down] ? 0x04 : 0) |
+                                (ControllerState[(int)ControllerButton.Left] ? 0x02 : 0) |
+                                (ControllerState[(int)ControllerButton.Right] ? 0x01 : 0)
+                            );
+                            Bytes[--i] = (byte)(
+                                (ControllerState[(int)ControllerButton.UpC] ? 0x08 : 0) |
+                                (ControllerState[(int)ControllerButton.DownC] ? 0x04 : 0) |
+                                (ControllerState[(int)ControllerButton.LeftC] ? 0x02 : 0) |
+                                (ControllerState[(int)ControllerButton.RightC] ? 0x01 : 0)
+                            );
+                            Bytes[--i] = 0x00;
+                            Bytes[--i] = 0x00;
+                            break;
+
+                        // TODO: Mempack R/W 
+                        case 0x02:
+                        case 0x03:
+                            i -= r;
                             break;
 
                         default:

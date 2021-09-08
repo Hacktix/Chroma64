@@ -2,12 +2,13 @@
 using Chroma64.Emulator.CPU;
 using Chroma.Graphics;
 using Chroma64.Util;
+using Chroma64.Emulator.IO;
 
 namespace Chroma64.Emulator
 {
     class EmulatorCore
     {
-        private static readonly int TICKS_PER_FRAME = 1562500;
+        private static readonly int TICKS_PER_FRAME = (int)(1562500 / 1.5);
 
         private ROM rom;
         private MemoryBus bus;
@@ -18,6 +19,11 @@ namespace Chroma64.Emulator
             rom = new ROM(romPath);
             bus = new MemoryBus(rom);
             cpu = new MainCPU(bus);
+        }
+
+        public void HandleInput(ControllerButton btn, bool pressed)
+        {
+            bus.PIF.ControllerState[(int)btn] = pressed;
         }
 
         public void TickFrame()

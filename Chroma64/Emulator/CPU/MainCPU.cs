@@ -86,6 +86,7 @@ namespace Chroma64.Emulator.CPU
             instrs[7] = MIPS_BGTZ;
             instrs[20] = MIPS_BEQL;
             instrs[21] = MIPS_BNEL;
+            instrs[22] = MIPS_BLEZL;
             instrs[23] = MIPS_BGTZL;
 
             // Load Instructions
@@ -152,6 +153,7 @@ namespace Chroma64.Emulator.CPU
             instrsSpecial[27] = MIPS_DIVU;
             instrsSpecial[32] = MIPS_ADD;
             instrsSpecial[33] = MIPS_ADDU;
+            instrsSpecial[34] = MIPS_SUB;
             instrsSpecial[35] = MIPS_SUBU;
             instrsSpecial[44] = MIPS_DADD;
 
@@ -246,7 +248,7 @@ namespace Chroma64.Emulator.CPU
                     else
                     {
                         uint opcode = (instr & 0xFC000000) >> 26;
-#if DEBUG
+#if !DEBUG
                         try
                         {
                             instrs[opcode](instr);
@@ -642,6 +644,24 @@ namespace Chroma64.Emulator.CPU
             }
 
             LogInstr("BLEZ", $"{src} <= 0 -> {val:X16} <= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
+        }
+
+        void MIPS_BLEZL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
+            ulong addr = pc + offset;
+            long val = GetReg(src);
+            bool cond = val <= 0;
+            if (cond)
+            {
+                branchQueued = 2;
+                branchTarget = addr;
+            }
+            else
+                pc += 4;
+
+            LogInstr("BLEZL", $"{src} <= 0 -> {val:X16} <= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
         #endregion
@@ -1256,6 +1276,19 @@ namespace Chroma64.Emulator.CPU
             LogInstr("ADDU", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
         }
 
+        void MIPS_SUB(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            int val1 = (int)GetReg(op1);
+            int val2 = (int)GetReg(op2);
+            long res = (int)(val1 - val2);
+            SetReg(dest, res);
+
+            LogInstr("SUBU", $"{op1} - {op2} -> {val1:X16} - {val2:X16} -> {res:X16} -> {dest}");
+        }
+
         void MIPS_SUBU(uint instr)
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -1805,8 +1838,19 @@ namespace Chroma64.Emulator.CPU
                             break;
                     }
                     break;
+                case 0xC:
+                    switch (fmt)
+                    {
+                        case 0b10001:
+                            COP1.C_LT_D(op1, op2);
+                            break;
+                        case 0b10000:
+                            COP1.C_LT_S(op1, op2);
+                            break;
+                    }
+                    break;
                 default:
-                    Log.FatalError($"C.cond.fmt : Unimplemented condition {cond:X1} in instruction {instr:X8}");
+                    Log.FatalError($"C.cond.fmt : Unimplemented condition {cond:X2} in instruction {instr:X8}");
                     break;
             }
         }
