@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Chroma64.Emulator.CPU
@@ -71,6 +72,7 @@ namespace Chroma64.Emulator.CPU
         public static extern int SetRound(RoundMode roundingMode);
         #endregion
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void SetFGR<T>(int index, T value) where T : unmanaged
         {
             fixed (byte* ptr = bytes)
@@ -99,6 +101,7 @@ namespace Chroma64.Emulator.CPU
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe T GetFGR<T>(int index) where T : unmanaged
         {
             fixed (byte* ptr = bytes)
@@ -115,6 +118,7 @@ namespace Chroma64.Emulator.CPU
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetCondition(bool value)
         {
             if (value)
@@ -123,6 +127,7 @@ namespace Chroma64.Emulator.CPU
                 fcr31 &= ~(1 << 23);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetCondition()
         {
             return (fcr31 & (1 << 23)) != 0;

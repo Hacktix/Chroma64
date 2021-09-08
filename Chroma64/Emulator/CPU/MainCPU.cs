@@ -3,6 +3,7 @@ using Chroma64.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.CPU
 {
@@ -279,6 +280,7 @@ namespace Chroma64.Emulator.CPU
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TriggerException(int exceptionCode)
         {
             if (branchQueued > 0)
@@ -328,12 +330,14 @@ namespace Chroma64.Emulator.CPU
         #endregion
 
         #region CPU Register Instructions
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetReg(CPUREG reg, long value)
         {
             if (reg != CPUREG.ZERO)
                 regs[(int)reg] = value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private long GetReg(CPUREG reg)
         {
             return regs[(int)reg];

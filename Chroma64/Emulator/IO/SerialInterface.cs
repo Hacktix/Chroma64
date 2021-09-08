@@ -1,5 +1,6 @@
 ﻿using Chroma64.Emulator.Memory;
 using Chroma64.Util;
+using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.IO
 {
@@ -20,6 +21,8 @@ namespace Chroma64.Emulator.IO
         {
             this.bus = bus;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new T Read<T>(ulong addr) where T : unmanaged
         {
             // Addresses over 0x1B are unused
@@ -29,6 +32,7 @@ namespace Chroma64.Emulator.IO
             return base.Read<T>(addr);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
             if (addr >= (ulong)SI.PIF_ADDR_RD64B_REG && addr < (ulong)SI.PIF_ADDR_RD64B_REG + 4)
@@ -71,11 +75,13 @@ namespace Chroma64.Emulator.IO
             base.Write(addr, val);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetRegister(SI reg)
         {
             return base.Read<uint>((ulong)reg);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetRegister(SI reg, uint value)
         {
             base.Write((ulong)reg, value);

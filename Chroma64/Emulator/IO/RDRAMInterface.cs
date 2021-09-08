@@ -1,4 +1,5 @@
 ﻿using Chroma64.Emulator.Memory;
+using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.IO
 {
@@ -25,6 +26,7 @@ namespace Chroma64.Emulator.IO
             SetRegister(RI.REFRESH_REG, 0x63634);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new T Read<T>(ulong addr) where T : unmanaged
         {
             // RI_WERROR_REG is Write-Only
@@ -38,6 +40,7 @@ namespace Chroma64.Emulator.IO
             return base.Read<T>(addr);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
             // RI_RERROR_REG is Read-Only
@@ -58,11 +61,13 @@ namespace Chroma64.Emulator.IO
             base.Write<T>(addr, val);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetRegister(RI reg)
         {
             return base.Read<uint>((ulong)reg);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetRegister(RI reg, uint value)
         {
             base.Write((ulong)reg, value);

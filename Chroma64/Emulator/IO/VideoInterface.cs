@@ -4,6 +4,7 @@ using Chroma64.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -36,6 +37,7 @@ namespace Chroma64.Emulator.IO
             this.bus = bus;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new T Read<T>(ulong addr) where T : unmanaged
         {
             // Addresses over 0x37 are unused
@@ -45,6 +47,7 @@ namespace Chroma64.Emulator.IO
             return base.Read<T>(addr);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
             if (addr >= (ulong)VI.CURRENT_REG && addr < (ulong)VI.CURRENT_REG + 4)
@@ -60,16 +63,19 @@ namespace Chroma64.Emulator.IO
             base.Write<T>(addr, val);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetRegister(VI reg)
         {
             return base.Read<uint>((ulong)reg);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetRegister(VI reg, uint value)
         {
             base.Write((ulong)reg, value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool NeedsRender()
         {
             return (GetRegister(VI.CONTROL_REG) & 0b11) > 1;

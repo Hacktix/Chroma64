@@ -1,5 +1,6 @@
 ﻿using Chroma64.Emulator.IO;
 using Chroma64.Util;
+using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.Memory
 {
@@ -31,6 +32,7 @@ namespace Chroma64.Emulator.Memory
             VI = new VideoInterface(this);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Read<T>(ulong addr) where T : unmanaged
         {
             addr = GetPhysicalAddress(addr & 0xFFFFFFFF);
@@ -94,6 +96,7 @@ namespace Chroma64.Emulator.Memory
             return default;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write<T>(ulong addr, T val) where T : unmanaged
         {
             addr = GetPhysicalAddress(addr & 0xFFFFFFFF);
@@ -153,6 +156,7 @@ namespace Chroma64.Emulator.Memory
                 Log.CriticalError($"Write to unknown address 0x{addr:X8}");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ulong GetPhysicalAddress(ulong addr)
         {
             // KUSEG

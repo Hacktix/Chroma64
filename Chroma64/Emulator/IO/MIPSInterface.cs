@@ -1,5 +1,6 @@
 ﻿using Chroma64.Emulator.Memory;
 using Chroma64.Util;
+using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.IO
 {
@@ -20,6 +21,7 @@ namespace Chroma64.Emulator.IO
 
         public MIPSInterface() : base(0x10) { }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new unsafe T Read<T>(ulong addr) where T : unmanaged
         {
             // MI_INTR_MASK_REG
@@ -33,6 +35,7 @@ namespace Chroma64.Emulator.IO
             return base.Read<T>(addr);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new unsafe void Write<T>(ulong addr, T val) where T : unmanaged
         {
             // MI_INTR_MASK_REG
@@ -56,11 +59,13 @@ namespace Chroma64.Emulator.IO
             base.Write(addr, val);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetRegister(MI reg)
         {
             return base.Read<uint>((ulong)reg);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetRegister(MI reg, uint value)
         {
             base.Write((ulong)reg, value);

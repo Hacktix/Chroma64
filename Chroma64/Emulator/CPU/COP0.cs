@@ -1,5 +1,6 @@
 ﻿using Chroma64.Util;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.CPU
 {
@@ -24,6 +25,7 @@ namespace Chroma64.Emulator.CPU
         }
 
         // TODO: 64 bit regs
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetReg(COP0REG reg, long value)
         {
             // Random
@@ -38,6 +40,7 @@ namespace Chroma64.Emulator.CPU
             Registers[(int)reg] = value & 0xFFFFFFFF;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long GetReg(COP0REG reg)
         {
             // Random
@@ -47,6 +50,7 @@ namespace Chroma64.Emulator.CPU
             return Registers[(int)reg] & 0xFFFFFFFF;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Tick()
         {
             uint intr = parent.Bus.MI.GetRegister(IO.MI.INTR_REG);
