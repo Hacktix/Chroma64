@@ -256,9 +256,12 @@ namespace Chroma64.Emulator.CPU
                     {
                         uint opcode = (instr & 0xFC000000) >> 26;
 #if DEBUG
-                        try {
+                        try
+                        {
                             instrs[opcode](instr);
-                        } catch(Exception e) {
+                        }
+                        catch (Exception e)
+                        {
                             pc -= 4;
                             Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
                         }
@@ -303,7 +306,7 @@ namespace Chroma64.Emulator.CPU
             branchQueued = 0;
         }
 
-#region Debug Methods
+        #region Debug Methods
         [Conditional("DEBUG")]
         private void LogInstr(string instr, string msg)
         {
@@ -322,9 +325,9 @@ namespace Chroma64.Emulator.CPU
             if ((pc & 0xFFFFFFFF) == breakpoint)
                 debugging = true;
         }
-#endregion
+        #endregion
 
-#region CPU Register Instructions
+        #region CPU Register Instructions
         private void SetReg(CPUREG reg, long value)
         {
             if (reg != CPUREG.ZERO)
@@ -335,16 +338,19 @@ namespace Chroma64.Emulator.CPU
         {
             return regs[(int)reg];
         }
-#endregion
+        #endregion
 
-#region Sub-Instruction Decoders
+        #region Sub-Instruction Decoders
         private void InstrSpecial(uint instr)
         {
             uint opcode = instr & 0x3F;
 #if DEBUG
-            try {
+            try
+            {
                 instrsSpecial[opcode](instr);
-            } catch(Exception e) {
+            }
+            catch (Exception e)
+            {
                 pc -= 4;
                 Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
             }
@@ -357,9 +363,12 @@ namespace Chroma64.Emulator.CPU
         {
             uint opcode = (instr & 0x1F0000) >> 16;
 #if DEBUG
-            try {
+            try
+            {
                 instrsRegimm[opcode](instr);
-            } catch(Exception e) {
+            }
+            catch (Exception e)
+            {
                 pc -= 4;
                 Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
             }
@@ -379,9 +388,12 @@ namespace Chroma64.Emulator.CPU
                 {
                     uint cop1opcode = instr & 0x3F;
 #if DEBUG
-                    try {
+                    try
+                    {
                         instrsFPU[cop1opcode](instr);
-                    } catch(Exception e) {
+                    }
+                    catch (Exception e)
+                    {
                         pc -= 4;
                         Log.FatalError($"Unimplemented FPU Instruction 0x{instr:X8} [Opcode {cop1opcode}] at PC = 0x{pc:X16}");
                     }
@@ -395,9 +407,12 @@ namespace Chroma64.Emulator.CPU
                     {
                         uint fpuBranchOpcode = (instr & (0x3F << 16)) >> 16;
 #if DEBUG
-                        try {
+                        try
+                        {
                             instrsFPUBranch[fpuBranchOpcode](instr);
-                        } catch(Exception e) {
+                        }
+                        catch (Exception e)
+                        {
                             pc -= 4;
                             Log.FatalError($"Unimplemented FPU Branch Instruction 0x{instr:X8} [Opcode {fpuBranchOpcode}] at PC = 0x{pc:X16}");
                         }
@@ -408,9 +423,12 @@ namespace Chroma64.Emulator.CPU
                     else
                     {
 #if DEBUG
-                        try {
+                        try
+                        {
                             instrsCOP1[maybeOp](instr);
-                        } catch(Exception e) {
+                        }
+                        catch (Exception e)
+                        {
                             pc -= 4;
                             Log.FatalError($"Unimplemented COP1 Instruction 0x{instr:X8} [Opcode {maybeOp}] at PC = 0x{pc:X16}");
                         }
@@ -426,9 +444,12 @@ namespace Chroma64.Emulator.CPU
                 {
                     uint opcode = instr & 0x3F;
 #if DEBUG
-                    try {
+                    try
+                    {
                         instrsTLB[opcode](instr);
-                    } catch(Exception e) {
+                    }
+                    catch (Exception e)
+                    {
                         pc -= 4;
                         Log.FatalError($"Unimplemented TLB Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
                     }
@@ -440,9 +461,12 @@ namespace Chroma64.Emulator.CPU
                 {
                     uint opcode = (instr & (0x3F << 21)) >> 21;
 #if DEBUG
-                    try {
+                    try
+                    {
                         instrsCOP0[opcode](instr);
-                    } catch(Exception e) {
+                    }
+                    catch (Exception e)
+                    {
                         pc -= 4;
                         Log.FatalError($"Unimplemented COP0 Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
                     }
@@ -455,9 +479,12 @@ namespace Chroma64.Emulator.CPU
             {
                 uint opcode = (instr & (0x3F << 21)) >> 21;
 #if DEBUG
-                try {
+                try
+                {
                     instrsCOPz[opcode](instr);
-                } catch(Exception e) {
+                }
+                catch (Exception e)
+                {
                     pc -= 4;
                     Log.FatalError($"Unimplemented COPz Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
                 }
@@ -468,13 +495,13 @@ namespace Chroma64.Emulator.CPU
 
 
         }
-#endregion
+        #endregion
 
         // # Instruction Implementations
 
-#region Normal Instructions
+        #region Normal Instructions
 
-#region Branch Instructions
+        #region Branch Instructions
 
         void MIPS_J(uint instr)
         {
@@ -623,9 +650,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BLEZ", $"{src} <= 0 -> {val:X16} <= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
-#endregion
+        #endregion
 
-#region Load Instructions
+        #region Load Instructions
 
         void MIPS_LUI(uint instr)
         {
@@ -791,7 +818,7 @@ namespace Chroma64.Emulator.CPU
             LogInstr("LDR", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {sdword:X16} -> {res:X16} -> {dest}");
         }
 
-#region FPU Loads
+        #region FPU Loads
 
         void MIPS_LWC1(uint instr)
         {
@@ -819,11 +846,11 @@ namespace Chroma64.Emulator.CPU
             LogInstr("LDC1", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> FGR{dest}");
         }
 
-#endregion
+        #endregion
 
-#endregion
+        #endregion
 
-#region Store Instructions
+        #region Store Instructions
 
         void MIPS_SB(uint instr)
         {
@@ -911,7 +938,7 @@ namespace Chroma64.Emulator.CPU
             LogInstr("SWR", $"{src} -> {sval | mword:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
-#region FPU Stores
+        #region FPU Stores
 
         void MIPS_SWC1(uint instr)
         {
@@ -939,11 +966,11 @@ namespace Chroma64.Emulator.CPU
             LogInstr("SDC1", $"FGR{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
-#endregion
+        #endregion
 
-#endregion
+        #endregion
 
-#region Arithmetic Operations
+        #region Arithmetic Operations
 
         void MIPS_ADDIU(uint instr)
         {
@@ -979,9 +1006,9 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("ADDI", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
         }
-#endregion
+        #endregion
 
-#region Bitwise Operations
+        #region Bitwise Operations
 
         void MIPS_ORI(uint instr)
         {
@@ -1015,9 +1042,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("XORI", $"{src} -> {regval:X16} | {val:X16} -> {regval ^ val:X16} -> {dest}");
         }
 
-#endregion
+        #endregion
 
-#region Misc.
+        #region Misc.
 
         void MIPS_CACHE(uint instr)
         {
@@ -1048,13 +1075,13 @@ namespace Chroma64.Emulator.CPU
             LogInstr("SLTIU", $"{src} < {cp2:X16} -> {cp1:X16} < {cp2:X16} -> {val} -> {dest}");
         }
 
-#endregion
+        #endregion
 
-#endregion
+        #endregion
 
-#region Special Instructions
+        #region Special Instructions
 
-#region Bitwise Operations
+        #region Bitwise Operations
         void MIPS_AND(uint instr)
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -1205,9 +1232,9 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("DSLL32", $"{src} << {shift} -> {val:X16} << {shift:X} -> {res:X16} -> {dest}");
         }
-#endregion
+        #endregion
 
-#region Arithmetic Operations
+        #region Arithmetic Operations
 
         void MIPS_ADD(uint instr)
         {
@@ -1319,9 +1346,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("DADD", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
         }
 
-#endregion
+        #endregion
 
-#region Control Flow
+        #region Control Flow
 
         void MIPS_JR(uint instr)
         {
@@ -1343,9 +1370,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("JALR", $"{branchTarget:X16} -> PC");
         }
 
-#endregion
+        #endregion
 
-#region Misc.
+        #region Misc.
 
         void MIPS_SLT(uint instr)
         {
@@ -1408,11 +1435,11 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("MTHI", $"{src} -> {val:X16} -> HI");
         }
-#endregion
+        #endregion
 
-#endregion
+        #endregion
 
-#region REGIMM Instructions
+        #region REGIMM Instructions
 
         void MIPS_BLTZ(uint instr)
         {
@@ -1499,11 +1526,11 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BGEZAL", $"{src} >= 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
-#endregion
+        #endregion
 
-#region Coprocessor Instructions
+        #region Coprocessor Instructions
 
-#region COP0 Instructions
+        #region COP0 Instructions
 
         void MIPS_MTC0(uint instr)
         {
@@ -1523,18 +1550,18 @@ namespace Chroma64.Emulator.CPU
             LogInstr("MFC0", $"{src} -> {COP0.GetReg(src):X16} -> {dest}");
         }
 
-#endregion
+        #endregion
 
-#region TLB Instructions
+        #region TLB Instructions
 
         void MIPS_TLBWI(uint instr)
         {
             LogInstr("TLBWI", "Not yet implemented.");
         }
 
-#endregion
+        #endregion
 
-#region COP1 Instructions
+        #region COP1 Instructions
 
         void MIPS_MTC1(uint instr)
         {
@@ -1575,9 +1602,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("CFC1", $"FCR{fcr} -> {val:X16} -> {dest}");
         }
 
-#endregion
+        #endregion
 
-#region FPU Instructions
+        #region FPU Instructions
 
         void MIPS_CVT_D_FMT(uint instr)
         {
@@ -1798,9 +1825,9 @@ namespace Chroma64.Emulator.CPU
             COP1.SetFGR(dest, COP1.GetFGR<ulong>(src));
         }
 
-#endregion
+        #endregion
 
-#region FPU Branch Instructions
+        #region FPU Branch Instructions
 
         void MIPS_BC1T(uint instr)
         {
@@ -1862,9 +1889,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BC1FL", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
-#endregion
+        #endregion
 
-#endregion
+        #endregion
 
         void MIPS_ERET()
         {
