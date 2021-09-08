@@ -232,6 +232,10 @@ namespace Chroma64.Emulator.CPU
         public void C_LE_D(int op1, int op2) { SetCondition(GetFGR<double>(op1) <= GetFGR<double>(op2)); }
         public void C_LE_S(int op1, int op2) { SetCondition(GetFGR<float>(op1) <= GetFGR<float>(op2)); }
 
+        // C.LT.fmt
+        public void C_LT_D(int op1, int op2) { SetCondition(GetFGR<double>(op1) < GetFGR<double>(op2)); }
+        public void C_LT_S(int op1, int op2) { SetCondition(GetFGR<float>(op1) < GetFGR<float>(op2)); }
+
         #endregion
     }
 }
