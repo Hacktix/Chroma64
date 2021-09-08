@@ -19,7 +19,7 @@ namespace Chroma64.Emulator.Memory
         public VideoInterface VI;
 
         public ROM ROM;
-        public PIFRAM PIFRAM;
+        public PIF PIF;
 
         public MainCPU CPU;
 
@@ -31,7 +31,7 @@ namespace Chroma64.Emulator.Memory
             MI = new MIPSInterface(this);
             SI = new SerialInterface(this);
             AI = new AudioInterface();
-            PIFRAM = new PIFRAM();
+            PIF = new PIF();
             VI = new VideoInterface(this);
         }
 
@@ -93,7 +93,7 @@ namespace Chroma64.Emulator.Memory
 
             // PIF RAM
             else if (addr >= 0x1FC007C0 && addr <= 0x1FC007FF)
-                return PIFRAM.Read<T>(addr & 0x3F);
+                return PIF.Read<T>(addr & 0x3F);
 
             Log.CriticalError($"Read from unknown address 0x{addr:X8}");
             return default;
@@ -153,7 +153,7 @@ namespace Chroma64.Emulator.Memory
 
             // PIF RAM
             else if (addr >= 0x1FC007C0 && addr <= 0x1FC007FF)
-                PIFRAM.Write(addr & 0x3F, val);
+                PIF.Write(addr & 0x3F, val);
 
             else
                 Log.CriticalError($"Write to unknown address 0x{addr:X8}");

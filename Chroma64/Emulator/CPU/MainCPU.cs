@@ -227,7 +227,7 @@ namespace Chroma64.Emulator.CPU
 
                 // Tick other hardware registers
                 COP0.Tick();
-                if((i & 1) == 0)
+                if ((i & 1) == 0)
                     Bus.VI.Tick();
 
                 // Check Interrupts
