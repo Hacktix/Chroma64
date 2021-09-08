@@ -26,15 +26,15 @@ namespace Chroma64.Emulator.CPU
         public COP1 COP1;
         public MemoryBus Bus;
 
-        private Dictionary<uint, Action<uint>> instrs = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsSpecial = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsRegimm = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsCOP0 = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsTLB = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsCOP1 = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsFPU = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsFPUBranch = new Dictionary<uint, Action<uint>>();
-        private Dictionary<uint, Action<uint>> instrsCOPz = new Dictionary<uint, Action<uint>>();
+        private Action<uint>[] instrs = new Action<uint>[0x40];
+        private Action<uint>[] instrsSpecial = new Action<uint>[0x40];
+        private Action<uint>[] instrsRegimm = new Action<uint>[0x40];
+        private Action<uint>[] instrsCOP0 = new Action<uint>[0x40];
+        private Action<uint>[] instrsTLB = new Action<uint>[0x40];
+        private Action<uint>[] instrsCOP1 = new Action<uint>[0x40];
+        private Action<uint>[] instrsFPU = new Action<uint>[0x40];
+        private Action<uint>[] instrsFPUBranch = new Action<uint>[0x40];
+        private Action<uint>[] instrsCOPz = new Action<uint>[0x40];
 
         // Branch Instruction Variables
         private int branchQueued = 0;
@@ -69,87 +69,158 @@ namespace Chroma64.Emulator.CPU
 
             // # Initializing Instruction LUT
 
-            instrs = new Dictionary<uint, Action<uint>>()
-            {
-                // Instruction Subset Decoders
-                { 0, InstrSpecial }, { 1, InstrRegimm }, { 16, InstrCop }, { 17, InstrCop }, { 18, InstrCop },
+            #region Normal Instructions
+            // Instruction Subset Decoders
+            instrs[0] = InstrSpecial;
+            instrs[1] = InstrRegimm;
+            instrs[16] = instrs[17] = instrs[18] = InstrCop;
 
-                // Branch Instructions
-                { 2, MIPS_J }, { 3, MIPS_JAL }, { 4, MIPS_BEQ }, { 5, MIPS_BNE }, { 6, MIPS_BLEZ }, { 20, MIPS_BEQL }, { 21, MIPS_BNEL }, { 7, MIPS_BGTZ }, { 23, MIPS_BGTZL },
+            // Branch Instructions
+            instrs[2] = MIPS_J;
+            instrs[3] = MIPS_JAL;
+            instrs[4] = MIPS_BEQ;
+            instrs[5] = MIPS_BNE;
+            instrs[6] = MIPS_BLEZ;
+            instrs[7] = MIPS_BGTZ;
+            instrs[20] = MIPS_BEQL;
+            instrs[21] = MIPS_BNEL;
+            instrs[23] = MIPS_BGTZL;
 
-                // Load Instructions
-                { 15, MIPS_LUI }, { 32, MIPS_LB }, { 36, MIPS_LBU }, { 33, MIPS_LH }, { 37, MIPS_LHU }, { 35, MIPS_LW }, { 39, MIPS_LWU }, { 55, MIPS_LD }, { 34, MIPS_LWL }, { 38, MIPS_LWR }, { 26, MIPS_LDL }, { 27, MIPS_LDR },
-                { 53, MIPS_LDC1 }, { 49, MIPS_LWC1 },
+            // Load Instructions
+            instrs[15] = MIPS_LUI;
+            instrs[26] = MIPS_LDL;
+            instrs[27] = MIPS_LDR;
+            instrs[32] = MIPS_LB;
+            instrs[33] = MIPS_LH;
+            instrs[34] = MIPS_LWL;
+            instrs[35] = MIPS_LW;
+            instrs[36] = MIPS_LBU;
+            instrs[37] = MIPS_LHU;
+            instrs[38] = MIPS_LWR;
+            instrs[39] = MIPS_LWU;
+            instrs[49] = MIPS_LWC1;
+            instrs[53] = MIPS_LDC1;
+            instrs[55] = MIPS_LD;
 
-                // Store Instructions
-                { 40, MIPS_SB }, { 41, MIPS_SH }, { 43, MIPS_SW }, { 63, MIPS_SD }, { 42, MIPS_SWL }, { 46, MIPS_SWR },
-                { 61, MIPS_SDC1 }, { 57, MIPS_SWC1 },
+            // Store Instructions
+            instrs[40] = MIPS_SB;
+            instrs[41] = MIPS_SH;
+            instrs[42] = MIPS_SWL;
+            instrs[43] = MIPS_SW;
+            instrs[46] = MIPS_SWR;
+            instrs[57] = MIPS_SWC1;
+            instrs[61] = MIPS_SDC1;
+            instrs[63] = MIPS_SD;
 
-                // Arithmetic Operations
-                { 9, MIPS_ADDIU }, { 8, MIPS_ADDI }, { 24, MIPS_DADDI },
+            // Arithmetic Operations
+            instrs[8] = MIPS_ADDI;
+            instrs[9] = MIPS_ADDIU;
+            instrs[24] = MIPS_DADDI;
 
-                // Bitwise Operations
-                { 13, MIPS_ORI }, { 12, MIPS_ANDI }, { 14, MIPS_XORI },
+            // Bitwise Operations
+            instrs[12] = MIPS_ANDI;
+            instrs[13] = MIPS_ORI;
+            instrs[14] = MIPS_XORI;
 
-                // Misc.
-                { 47, MIPS_CACHE }, { 10, MIPS_SLTI }, { 11, MIPS_SLTIU },
-            };
+            // Misc.
+            instrs[10] = MIPS_SLTI;
+            instrs[11] = MIPS_SLTIU;
+            instrs[47] = MIPS_CACHE;
+            #endregion
 
-            instrsSpecial = new Dictionary<uint, Action<uint>>()
-            {
-                // Bitwise Operations
-                { 36, MIPS_AND }, { 37, MIPS_OR }, { 38, MIPS_XOR }, { 39, MIPS_NOR }, { 2, MIPS_SRL }, { 3, MIPS_SRA }, { 6, MIPS_SRLV }, { 7, MIPS_SRAV }, { 0, MIPS_SLL }, { 4, MIPS_SLLV }, { 56, MIPS_DSLL }, { 60, MIPS_DSLL32 },
+            #region Special Instructions
+            // Bitwise Operations
+            instrsSpecial[0] = MIPS_SLL;
+            instrsSpecial[2] = MIPS_SRL;
+            instrsSpecial[3] = MIPS_SRA;
+            instrsSpecial[4] = MIPS_SLLV;
+            instrsSpecial[6] = MIPS_SRLV;
+            instrsSpecial[7] = MIPS_SRAV;
+            instrsSpecial[36] = MIPS_AND;
+            instrsSpecial[37] = MIPS_OR;
+            instrsSpecial[38] = MIPS_XOR;
+            instrsSpecial[39] = MIPS_NOR;
+            instrsSpecial[56] = MIPS_DSLL;
+            instrsSpecial[60] = MIPS_DSLL32;
 
-                // Arithmetic Operations
-                { 32, MIPS_ADD }, { 33, MIPS_ADDU }, { 35, MIPS_SUBU }, { 25, MIPS_MULTU }, { 24, MIPS_MULT }, { 26, MIPS_DIV }, { 27, MIPS_DIVU }, { 44, MIPS_DADD },
+            // Arithmetic Operations
+            instrsSpecial[24] = MIPS_MULT;
+            instrsSpecial[25] = MIPS_MULTU;
+            instrsSpecial[26] = MIPS_DIV;
+            instrsSpecial[27] = MIPS_DIVU;
+            instrsSpecial[32] = MIPS_ADD;
+            instrsSpecial[33] = MIPS_ADDU;
+            instrsSpecial[35] = MIPS_SUBU;
+            instrsSpecial[44] = MIPS_DADD;
 
-                // Control Flow
-                { 8, MIPS_JR }, { 9, MIPS_JALR },
+            // Control Flow
+            instrsSpecial[8] = MIPS_JR;
+            instrsSpecial[9] = MIPS_JALR;
 
-                // Misc.
-                { 42, MIPS_SLT }, { 43, MIPS_SLTU }, { 18, MIPS_MFLO }, { 16, MIPS_MFHI }, { 19, MIPS_MTLO }, { 17, MIPS_MTHI },
-            };
+            // Misc.
+            instrsSpecial[16] = MIPS_MFHI;
+            instrsSpecial[17] = MIPS_MTHI;
+            instrsSpecial[18] = MIPS_MFLO;
+            instrsSpecial[19] = MIPS_MTLO;
+            instrsSpecial[42] = MIPS_SLT;
+            instrsSpecial[43] = MIPS_SLTU;
+            #endregion
 
-            instrsRegimm = new Dictionary<uint, Action<uint>>()
-            {
-                { 0, MIPS_BLTZ }, { 1, MIPS_BGEZ }, { 2, MIPS_BLTZL }, { 3, MIPS_BGEZL }, { 17, MIPS_BGEZAL },
-            };
+            #region REGIMM Instructions
+            instrsRegimm[0] = MIPS_BLTZ;
+            instrsRegimm[1] = MIPS_BGEZ;
+            instrsRegimm[2] = MIPS_BLTZL;
+            instrsRegimm[3] = MIPS_BGEZL;
+            instrsRegimm[17] = MIPS_BGEZAL;
+            #endregion
 
-            instrsCOP0 = new Dictionary<uint, Action<uint>>()
-            {
-                { 0, MIPS_MFC0 }, { 4, MIPS_MTC0 },
-            };
+            #region COP0 Instructions
+            instrsCOP0[0] = MIPS_MFC0;
+            instrsCOP0[4] = MIPS_MTC0;
+            #endregion
 
-            instrsTLB = new Dictionary<uint, Action<uint>>()
-            {
-                { 2, MIPS_TLBWI },
-            };
+            #region TLB Instructions
+            instrsTLB[2] = MIPS_TLBWI;
+            #endregion
 
-            instrsCOP1 = new Dictionary<uint, Action<uint>>()
-            {
-                { 0, MIPS_MFC1 }, { 2, MIPS_CFC1 }, { 6, MIPS_CTC1 }, { 4, MIPS_MTC1 },
-            };
+            #region COP1 Instructions
+            instrsCOP1[0] = MIPS_MFC1;
+            instrsCOP1[2] = MIPS_CFC1;
+            instrsCOP1[4] = MIPS_MTC1;
+            instrsCOP1[6] = MIPS_CTC1;
+            #endregion
 
-            instrsFPU = new Dictionary<uint, Action<uint>>()
-            {
-                { 33, MIPS_CVT_D_FMT }, { 32, MIPS_CVT_S_FMT }, { 37, MIPS_CVT_L_FMT }, { 36, MIPS_CVT_W_FMT },
-                { 9, MIPS_TRUNC_L_FMT }, { 13, MIPS_TRUNC_W_FMT },
-                { 5, MIPS_ABS_FMT }, { 0, MIPS_ADD_FMT }, { 2, MIPS_MUL_FMT }, { 1, MIPS_SUB_FMT }, { 3, MIPS_DIV_FMT },
-                { 6, MIPS_MOV_FMT },
-            };
+            #region FPU Instructions
+            instrsFPU[0] = MIPS_ADD_FMT;
+            instrsFPU[1] = MIPS_SUB_FMT;
+            instrsFPU[2] = MIPS_MUL_FMT;
+            instrsFPU[3] = MIPS_DIV_FMT;
+            instrsFPU[5] = MIPS_ABS_FMT;
+            instrsFPU[6] = MIPS_MOV_FMT;
+            instrsFPU[9] = MIPS_TRUNC_L_FMT;
+            instrsFPU[13] = MIPS_TRUNC_W_FMT;
+            instrsFPU[32] = MIPS_CVT_S_FMT;
+            instrsFPU[33] = MIPS_CVT_D_FMT;
+            instrsFPU[36] = MIPS_CVT_W_FMT;
+            instrsFPU[37] = MIPS_CVT_L_FMT;
+
             for (uint i = 0b110000; i < 0x3F; i++)
-                instrsFPU.Add(i, MIPS_C_COND_FMT);
+                instrsFPU[i] = MIPS_C_COND_FMT;
+            #endregion
 
-            instrsFPUBranch = new Dictionary<uint, Action<uint>>()
-            {
-                { 0, MIPS_BC1F }, { 1, MIPS_BC1T }, { 2, MIPS_BC1FL }, { 3, MIPS_BC1TL },
-            };
+            #region FPU Branch Instructions
+            instrsFPUBranch[0] = MIPS_BC1F;
+            instrsFPUBranch[1] = MIPS_BC1T;
+            instrsFPUBranch[2] = MIPS_BC1FL;
+            instrsFPUBranch[3] = MIPS_BC1TL;
+            #endregion
         }
 
         public void Tick(int cycles)
         {
             for (int i = 0; i < cycles; i++)
             {
+                // DEBUG Build Only: Check if Breakpoint is reached
                 CheckBreakpoint();
 
                 // Update VI_CURRENT
@@ -184,16 +255,16 @@ namespace Chroma64.Emulator.CPU
                     else
                     {
                         uint opcode = (instr & 0xFC000000) >> 26;
-                        CheckInstructionImplemented(instr, opcode, instrs);
-                        try
-                        {
+#if DEBUG
+                        try {
                             instrs[opcode](instr);
-                        }
-                        catch (Exception e)
-                        {
+                        } catch(Exception e) {
                             pc -= 4;
-                            Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16} (Exception: {e.Message})");
+                            Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
                         }
+#else
+                        instrs[opcode](instr);
+#endif
                     }
                 }
                 else
@@ -232,7 +303,7 @@ namespace Chroma64.Emulator.CPU
             branchQueued = 0;
         }
 
-        #region Debug Methods
+#region Debug Methods
         [Conditional("DEBUG")]
         private void LogInstr(string instr, string msg)
         {
@@ -251,20 +322,9 @@ namespace Chroma64.Emulator.CPU
             if ((pc & 0xFFFFFFFF) == breakpoint)
                 debugging = true;
         }
+#endregion
 
-        [Conditional("DEBUG")]
-        private void CheckInstructionImplemented(uint instr, uint opcode, Dictionary<uint, Action<uint>> set)
-        {
-            if (!set.ContainsKey(opcode))
-            {
-                pc -= 4;
-                Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
-            }
-
-        }
-        #endregion
-
-        #region CPU Register Instructions
+#region CPU Register Instructions
         private void SetReg(CPUREG reg, long value)
         {
             if (reg != CPUREG.ZERO)
@@ -275,21 +335,37 @@ namespace Chroma64.Emulator.CPU
         {
             return regs[(int)reg];
         }
-        #endregion
+#endregion
 
-        #region Sub-Instruction Decoders
+#region Sub-Instruction Decoders
         private void InstrSpecial(uint instr)
         {
             uint opcode = instr & 0x3F;
-            CheckInstructionImplemented(instr, opcode, instrsSpecial);
+#if DEBUG
+            try {
+                instrsSpecial[opcode](instr);
+            } catch(Exception e) {
+                pc -= 4;
+                Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+            }
+#else
             instrsSpecial[opcode](instr);
+#endif
         }
 
         private void InstrRegimm(uint instr)
         {
             uint opcode = (instr & 0x1F0000) >> 16;
-            CheckInstructionImplemented(instr, opcode, instrsRegimm);
+#if DEBUG
+            try {
+                instrsRegimm[opcode](instr);
+            } catch(Exception e) {
+                pc -= 4;
+                Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+            }
+#else
             instrsRegimm[opcode](instr);
+#endif
         }
 
         private void InstrCop(uint instr)
@@ -302,21 +378,45 @@ namespace Chroma64.Emulator.CPU
                 if (maybeOp == 0b10000 || maybeOp == 0b10101 || maybeOp == 0b10100 || maybeOp == 0b10001)
                 {
                     uint cop1opcode = instr & 0x3F;
-                    CheckInstructionImplemented(instr, cop1opcode, instrsFPU);
+#if DEBUG
+                    try {
+                        instrsFPU[cop1opcode](instr);
+                    } catch(Exception e) {
+                        pc -= 4;
+                        Log.FatalError($"Unimplemented FPU Instruction 0x{instr:X8} [Opcode {cop1opcode}] at PC = 0x{pc:X16}");
+                    }
+#else
                     instrsFPU[cop1opcode](instr);
+#endif
                 }
                 else
                 {
                     if (maybeOp == 0b01000)
                     {
                         uint fpuBranchOpcode = (instr & (0x3F << 16)) >> 16;
-                        CheckInstructionImplemented(instr, fpuBranchOpcode, instrsFPUBranch);
+#if DEBUG
+                        try {
+                            instrsFPUBranch[fpuBranchOpcode](instr);
+                        } catch(Exception e) {
+                            pc -= 4;
+                            Log.FatalError($"Unimplemented FPU Branch Instruction 0x{instr:X8} [Opcode {fpuBranchOpcode}] at PC = 0x{pc:X16}");
+                        }
+#else
                         instrsFPUBranch[fpuBranchOpcode](instr);
+#endif
                     }
                     else
                     {
-                        CheckInstructionImplemented(instr, maybeOp, instrsCOP1);
+#if DEBUG
+                        try {
+                            instrsCOP1[maybeOp](instr);
+                        } catch(Exception e) {
+                            pc -= 4;
+                            Log.FatalError($"Unimplemented COP1 Instruction 0x{instr:X8} [Opcode {maybeOp}] at PC = 0x{pc:X16}");
+                        }
+#else
                         instrsCOP1[maybeOp](instr);
+#endif
                     }
                 }
             }
@@ -325,32 +425,56 @@ namespace Chroma64.Emulator.CPU
                 if ((instr & 0b11111111111111111111000000) == 0b10000000000000000000000000)
                 {
                     uint opcode = instr & 0x3F;
-                    CheckInstructionImplemented(instr, opcode, instrsTLB);
+#if DEBUG
+                    try {
+                        instrsTLB[opcode](instr);
+                    } catch(Exception e) {
+                        pc -= 4;
+                        Log.FatalError($"Unimplemented TLB Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    }
+#else
                     instrsTLB[opcode](instr);
+#endif
                 }
                 else
                 {
                     uint opcode = (instr & (0x3F << 21)) >> 21;
-                    CheckInstructionImplemented(instr, opcode, instrsCOP0);
+#if DEBUG
+                    try {
+                        instrsCOP0[opcode](instr);
+                    } catch(Exception e) {
+                        pc -= 4;
+                        Log.FatalError($"Unimplemented COP0 Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    }
+#else
                     instrsCOP0[opcode](instr);
+#endif
                 }
             }
             else
             {
                 uint opcode = (instr & (0x3F << 21)) >> 21;
-                CheckInstructionImplemented(instr, opcode, instrsCOPz);
+#if DEBUG
+                try {
+                    instrsCOPz[opcode](instr);
+                } catch(Exception e) {
+                    pc -= 4;
+                    Log.FatalError($"Unimplemented COPz Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                }
+#else
                 instrsCOPz[opcode](instr);
+#endif
             }
 
 
         }
-        #endregion
+#endregion
 
         // # Instruction Implementations
 
-        #region Normal Instructions
+#region Normal Instructions
 
-        #region Branch Instructions
+#region Branch Instructions
 
         void MIPS_J(uint instr)
         {
@@ -499,9 +623,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BLEZ", $"{src} <= 0 -> {val:X16} <= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
-        #endregion
+#endregion
 
-        #region Load Instructions
+#region Load Instructions
 
         void MIPS_LUI(uint instr)
         {
@@ -667,7 +791,7 @@ namespace Chroma64.Emulator.CPU
             LogInstr("LDR", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {sdword:X16} -> {res:X16} -> {dest}");
         }
 
-        #region FPU Loads
+#region FPU Loads
 
         void MIPS_LWC1(uint instr)
         {
@@ -695,11 +819,11 @@ namespace Chroma64.Emulator.CPU
             LogInstr("LDC1", $"[{src}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}] -> {val:X16} -> FGR{dest}");
         }
 
-        #endregion
+#endregion
 
-        #endregion
+#endregion
 
-        #region Store Instructions
+#region Store Instructions
 
         void MIPS_SB(uint instr)
         {
@@ -787,7 +911,7 @@ namespace Chroma64.Emulator.CPU
             LogInstr("SWR", $"{src} -> {sval | mword:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
-        #region FPU Stores
+#region FPU Stores
 
         void MIPS_SWC1(uint instr)
         {
@@ -815,11 +939,11 @@ namespace Chroma64.Emulator.CPU
             LogInstr("SDC1", $"FGR{src} -> {val:X16} -> [{dest}] -> [{baseAddr:X16} + {offset:X4} = {addr:X16}]");
         }
 
-        #endregion
+#endregion
 
-        #endregion
+#endregion
 
-        #region Arithmetic Operations
+#region Arithmetic Operations
 
         void MIPS_ADDIU(uint instr)
         {
@@ -855,9 +979,9 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("ADDI", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
         }
-        #endregion
+#endregion
 
-        #region Bitwise Operations
+#region Bitwise Operations
 
         void MIPS_ORI(uint instr)
         {
@@ -891,9 +1015,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("XORI", $"{src} -> {regval:X16} | {val:X16} -> {regval ^ val:X16} -> {dest}");
         }
 
-        #endregion
+#endregion
 
-        #region Misc.
+#region Misc.
 
         void MIPS_CACHE(uint instr)
         {
@@ -924,13 +1048,13 @@ namespace Chroma64.Emulator.CPU
             LogInstr("SLTIU", $"{src} < {cp2:X16} -> {cp1:X16} < {cp2:X16} -> {val} -> {dest}");
         }
 
-        #endregion
+#endregion
 
-        #endregion
+#endregion
 
-        #region Special Instructions
+#region Special Instructions
 
-        #region Bitwise Operations
+#region Bitwise Operations
         void MIPS_AND(uint instr)
         {
             CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
@@ -1081,9 +1205,9 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("DSLL32", $"{src} << {shift} -> {val:X16} << {shift:X} -> {res:X16} -> {dest}");
         }
-        #endregion
+#endregion
 
-        #region Arithmetic Operations
+#region Arithmetic Operations
 
         void MIPS_ADD(uint instr)
         {
@@ -1195,9 +1319,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("DADD", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
         }
 
-        #endregion
+#endregion
 
-        #region Control Flow
+#region Control Flow
 
         void MIPS_JR(uint instr)
         {
@@ -1219,9 +1343,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("JALR", $"{branchTarget:X16} -> PC");
         }
 
-        #endregion
+#endregion
 
-        #region Misc.
+#region Misc.
 
         void MIPS_SLT(uint instr)
         {
@@ -1284,11 +1408,11 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("MTHI", $"{src} -> {val:X16} -> HI");
         }
-        #endregion
+#endregion
 
-        #endregion
+#endregion
 
-        #region REGIMM Instructions
+#region REGIMM Instructions
 
         void MIPS_BLTZ(uint instr)
         {
@@ -1375,11 +1499,11 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BGEZAL", $"{src} >= 0 -> {val:X16} >= 0 -> {(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
-        #endregion
+#endregion
 
-        #region Coprocessor Instructions
+#region Coprocessor Instructions
 
-        #region COP0 Instructions
+#region COP0 Instructions
 
         void MIPS_MTC0(uint instr)
         {
@@ -1399,18 +1523,18 @@ namespace Chroma64.Emulator.CPU
             LogInstr("MFC0", $"{src} -> {COP0.GetReg(src):X16} -> {dest}");
         }
 
-        #endregion
+#endregion
 
-        #region TLB Instructions
+#region TLB Instructions
 
         void MIPS_TLBWI(uint instr)
         {
             LogInstr("TLBWI", "Not yet implemented.");
         }
 
-        #endregion
+#endregion
 
-        #region COP1 Instructions
+#region COP1 Instructions
 
         void MIPS_MTC1(uint instr)
         {
@@ -1451,9 +1575,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("CFC1", $"FCR{fcr} -> {val:X16} -> {dest}");
         }
 
-        #endregion
+#endregion
 
-        #region FPU Instructions
+#region FPU Instructions
 
         void MIPS_CVT_D_FMT(uint instr)
         {
@@ -1674,9 +1798,9 @@ namespace Chroma64.Emulator.CPU
             COP1.SetFGR(dest, COP1.GetFGR<ulong>(src));
         }
 
-        #endregion
+#endregion
 
-        #region FPU Branch Instructions
+#region FPU Branch Instructions
 
         void MIPS_BC1T(uint instr)
         {
@@ -1738,9 +1862,9 @@ namespace Chroma64.Emulator.CPU
             LogInstr("BC1FL", $"{(cond ? "" : "No ")}Branch to {addr:X8}");
         }
 
-        #endregion
+#endregion
 
-        #endregion
+#endregion
 
         void MIPS_ERET()
         {
