@@ -118,6 +118,7 @@ namespace Chroma64.Emulator.CPU
             instrs[8] = MIPS_ADDI;
             instrs[9] = MIPS_ADDIU;
             instrs[24] = MIPS_DADDI;
+            instrs[25] = MIPS_DADDIU;
 
             // Bitwise Operations
             instrs[12] = MIPS_ANDI;
@@ -143,6 +144,7 @@ namespace Chroma64.Emulator.CPU
             instrsSpecial[38] = MIPS_XOR;
             instrsSpecial[39] = MIPS_NOR;
             instrsSpecial[56] = MIPS_DSLL;
+            instrsSpecial[58] = MIPS_DSRL;
             instrsSpecial[60] = MIPS_DSLL32;
 
             // Arithmetic Operations
@@ -155,6 +157,8 @@ namespace Chroma64.Emulator.CPU
             instrsSpecial[34] = MIPS_SUB;
             instrsSpecial[35] = MIPS_SUBU;
             instrsSpecial[44] = MIPS_DADD;
+            instrsSpecial[45] = MIPS_DADDU;
+            instrsSpecial[47] = MIPS_DSUBU;
 
             // Control Flow
             instrsSpecial[8] = MIPS_JR;
@@ -837,7 +841,7 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_LWC1(uint instr)
         {
-            if((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
             {
                 TriggerException(11, 1);
                 return;
@@ -1040,6 +1044,17 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, regval + val);
 
             LogInstr("ADDI", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
+        }
+
+        void MIPS_DADDIU(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            long val = (short)(instr & 0xFFFF);
+            long regval = GetReg(src);
+            SetReg(dest, regval + val);
+
+            LogInstr("DADDIU", $"{src} -> {regval:X16} + {val:X16} -> {regval + val:X16} -> {dest}");
         }
         #endregion
 
@@ -1267,6 +1282,18 @@ namespace Chroma64.Emulator.CPU
 
             LogInstr("DSLL32", $"{src} << {shift} -> {val:X16} << {shift:X} -> {res:X16} -> {dest}");
         }
+
+        void MIPS_DSRL(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            ulong val = (ulong)GetReg(src);
+            int shift = (int)(instr & (0x1F << 6)) >> 6;
+            long res = (long)(val >> shift);
+            SetReg(dest, res);
+
+            LogInstr("DSRL", $"{src} >> {shift} -> {val:X16} >> {shift:X} -> {res:X16} -> {dest}");
+        }
         #endregion
 
         #region Arithmetic Operations
@@ -1392,6 +1419,32 @@ namespace Chroma64.Emulator.CPU
             SetReg(dest, res);
 
             LogInstr("DADD", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_DADDU(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val1 = GetReg(op1);
+            long val2 = GetReg(op2);
+            long res = val1 + val2;
+            SetReg(dest, res);
+
+            LogInstr("DADDU", $"{op1} + {op2} -> {val1:X16} + {val2:X16} -> {res:X16} -> {dest}");
+        }
+
+        void MIPS_DSUBU(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val1 = GetReg(op1);
+            long val2 = GetReg(op2);
+            long res = val1 - val2;
+            SetReg(dest, res);
+
+            LogInstr("DSUBU", $"{op1} + {op2} -> {val1:X16} - {val2:X16} -> {res:X16} -> {dest}");
         }
 
         #endregion

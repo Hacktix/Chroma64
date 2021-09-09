@@ -39,7 +39,7 @@ namespace Chroma64.Emulator.IO
         {
             buffer.Clear();
 
-            if(dmaCount > 0)
+            if (dmaCount > 0)
             {
                 int len = Math.Min(buffer.Length, dmaLen[0]);
                 byte[] data = new byte[len];
@@ -59,10 +59,10 @@ namespace Chroma64.Emulator.IO
                 dmaAddr[0] += (uint)len;
                 dmaLen[0] -= len;
 
-                if(dmaLen[0] == 0)
+                if (dmaLen[0] == 0)
                 {
                     bus.MI.SetRegister(MI.INTR_REG, bus.MI.GetRegister(MI.INTR_REG) | 0b100);
-                    if(--dmaCount > 0)
+                    if (--dmaCount > 0)
                     {
                         dmaAddr[0] = dmaAddr[1];
                         dmaLen[0] = dmaLen[1];
