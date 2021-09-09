@@ -1,4 +1,8 @@
-﻿using Chroma64.Emulator.Memory;
+﻿using Chroma.Audio;
+using Chroma.Audio.Sources;
+using Chroma64.Emulator.Memory;
+using Chroma64.Util;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.IO
@@ -16,9 +20,49 @@ namespace Chroma64.Emulator.IO
 
     class AudioInterface : BigEndianMemory
     {
-        public AudioInterface() : base(0x18)
+        private Waveform wave;
+        private MemoryBus bus;
+
+        private int dmaCount = 0;
+        private uint[] dmaAddr = new uint[2];
+        private int[] dmaLen = new int[2];
+
+        public AudioInterface(MemoryBus bus) : base(0x18)
         {
-            SetRegister(AI.STATUS_REG, 0xC0000001);
+            this.bus = bus;
+            wave = new Waveform(new AudioFormat(SampleFormat.S16, ByteOrder.BigEndian), PushSamples);
+            wave.Volume = 1;
+            wave.Play();
+        }
+
+        private void PushSamples(Span<byte> buffer, AudioFormat format)
+        {
+            if(dmaCount > 0)
+            {
+                int len = Math.Min(buffer.Length, dmaLen[0]);
+                byte[] data = new byte[len];
+                Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - (int)dmaAddr[0] - len, data, 0, len);
+                Array.Reverse(data);
+                data.AsSpan().CopyTo(buffer);
+                Log.Info($"{BitConverter.ToString(buffer.ToArray()).Replace("-", "")}");
+
+                dmaAddr[0] += (uint)len;
+                dmaLen[0] -= len;
+
+                if(dmaLen[0] == 0)
+                {
+                    Log.Info("Raising AI Interrupt");
+                    bus.MI.SetRegister(MI.INTR_REG, bus.MI.GetRegister(MI.INTR_REG) | 0b100);
+                    if(--dmaCount > 0)
+                    {
+                        dmaAddr[0] = dmaAddr[1];
+                        dmaLen[0] = dmaLen[1];
+                        SetRegister(AI.STATUS_REG, 0x80000001);
+                    }
+                    else
+                        SetRegister(AI.STATUS_REG, 0);
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,8 +78,45 @@ namespace Chroma64.Emulator.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new void Write<T>(ulong addr, T val) where T : unmanaged
         {
-            if (addr >= (ulong)AI.STATUS_REG && addr < (ulong)AI.STATUS_REG + 4)
+            if (addr >= (ulong)AI.DRAM_ADDR_REG && addr < (ulong)AI.DRAM_ADDR_REG + 4)
+            {
+                base.Write(addr, val);
+                if (dmaCount < 2)
+                    dmaAddr[dmaCount] = GetRegister(AI.DRAM_ADDR_REG);
                 return;
+            }
+
+            if (addr >= (ulong)AI.LEN_REG && addr < (ulong)AI.LEN_REG + 4)
+            {
+                base.Write(addr, val);
+                uint len = GetRegister(AI.LEN_REG) & 0x3FFF8;
+                if (dmaCount < 2 && len > 0)
+                {
+                    dmaLen[dmaCount++] = (int)len;
+                    SetRegister(AI.STATUS_REG, dmaCount > 1 ? 0xC0000001 : 0x80000001);
+                }
+                return;
+            }
+
+            if (addr >= (ulong)AI.DACRATE_REG && addr < (ulong)AI.DACRATE_REG + 4)
+            {
+                base.Write(addr, val);
+                int dacrate = (int)GetRegister(AI.DACRATE_REG) & 0x3FFF;
+                int freq = Math.Max(1, (60*1562500) / 2 / dacrate);
+                if (wave.Frequency != freq)
+                {
+                    wave.Pause();
+                    wave = new Waveform(new AudioFormat(SampleFormat.S16, ByteOrder.BigEndian), PushSamples, ChannelMode.Stereo, freq);
+                    wave.Play();
+                }
+                return;
+            }
+
+            if (addr >= (ulong)AI.STATUS_REG && addr < (ulong)AI.STATUS_REG + 4)
+            {
+                bus.MI.SetRegister(MI.INTR_REG, (uint)(bus.MI.GetRegister(MI.INTR_REG) & ~0b100));
+                return;
+            }
 
             // Addresses over 0x17 are unused
             if (addr > 0x17)

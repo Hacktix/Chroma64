@@ -30,7 +30,7 @@ namespace Chroma64.Emulator.Memory
             PI = new PeripheralInterface(this);
             MI = new MIPSInterface(this);
             SI = new SerialInterface(this);
-            AI = new AudioInterface();
+            AI = new AudioInterface(this);
             PIF = new PIF();
             VI = new VideoInterface(this);
         }
