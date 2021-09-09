@@ -4,6 +4,7 @@ using Chroma64.Emulator.Memory;
 using Chroma64.Util;
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Chroma64.Emulator.IO
 {
@@ -31,12 +32,13 @@ namespace Chroma64.Emulator.IO
         {
             this.bus = bus;
             wave = new Waveform(new AudioFormat(SampleFormat.S16, ByteOrder.BigEndian), PushSamples);
-            wave.Volume = 1;
             wave.Play();
         }
 
         private void PushSamples(Span<byte> buffer, AudioFormat format)
         {
+            buffer.Clear();
+
             if(dmaCount > 0)
             {
                 int len = Math.Min(buffer.Length, dmaLen[0]);
@@ -44,20 +46,27 @@ namespace Chroma64.Emulator.IO
                 Array.Copy(bus.RDRAM.Bytes, bus.RDRAM.Bytes.Length - (int)dmaAddr[0] - len, data, 0, len);
                 Array.Reverse(data);
                 data.AsSpan().CopyTo(buffer);
-                Log.Info($"{BitConverter.ToString(buffer.ToArray()).Replace("-", "")}");
+
+                if (len < buffer.Length)
+                {
+                    for (int i = len; i < buffer.Length; i++)
+                    {
+                        buffer[i++] = data[data.Length - 2];
+                        buffer[i] = data[data.Length - 1];
+                    }
+                }
 
                 dmaAddr[0] += (uint)len;
                 dmaLen[0] -= len;
 
                 if(dmaLen[0] == 0)
                 {
-                    Log.Info("Raising AI Interrupt");
                     bus.MI.SetRegister(MI.INTR_REG, bus.MI.GetRegister(MI.INTR_REG) | 0b100);
                     if(--dmaCount > 0)
                     {
                         dmaAddr[0] = dmaAddr[1];
                         dmaLen[0] = dmaLen[1];
-                        SetRegister(AI.STATUS_REG, 0x80000001);
+                        SetRegister(AI.STATUS_REG, 0);
                     }
                     else
                         SetRegister(AI.STATUS_REG, 0);
@@ -93,7 +102,7 @@ namespace Chroma64.Emulator.IO
                 if (dmaCount < 2 && len > 0)
                 {
                     dmaLen[dmaCount++] = (int)len;
-                    SetRegister(AI.STATUS_REG, dmaCount > 1 ? 0xC0000001 : 0x80000001);
+                    SetRegister(AI.STATUS_REG, dmaCount > 1 ? 0xC1100001 : 0);
                 }
                 return;
             }
@@ -101,14 +110,13 @@ namespace Chroma64.Emulator.IO
             if (addr >= (ulong)AI.DACRATE_REG && addr < (ulong)AI.DACRATE_REG + 4)
             {
                 base.Write(addr, val);
-                int dacrate = (int)GetRegister(AI.DACRATE_REG) & 0x3FFF;
-                int freq = Math.Max(1, (60*1562500) / 2 / dacrate);
-                if (wave.Frequency != freq)
+                int dacrate = (int)(48681812 / ((GetRegister(AI.DACRATE_REG) & 0x3FFF) + 1));
+                /*if (wave.Frequency != dacrate)
                 {
-                    wave.Pause();
-                    wave = new Waveform(new AudioFormat(SampleFormat.S16, ByteOrder.BigEndian), PushSamples, ChannelMode.Stereo, freq);
+                    wave.Dispose();
+                    wave = new Waveform(new AudioFormat(SampleFormat.S16, ByteOrder.BigEndian), PushSamples, ChannelMode.Stereo, dacrate);
                     wave.Play();
-                }
+                }*/
                 return;
             }
 
