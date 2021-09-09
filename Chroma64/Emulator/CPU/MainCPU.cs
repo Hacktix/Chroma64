@@ -247,7 +247,7 @@ namespace Chroma64.Emulator.CPU
                     else
                     {
                         uint opcode = (instr & 0xFC000000) >> 26;
-#if !DEBUG
+#if DEBUG
                         try
                         {
                             instrs[opcode](instr);
@@ -272,10 +272,12 @@ namespace Chroma64.Emulator.CPU
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TriggerException(int exceptionCode)
+        public void TriggerException(int exceptionCode, uint copNo = 0)
         {
             if (branchQueued > 0)
                 COP0.SetReg(COP0REG.Cause, COP0.GetReg(COP0REG.Cause) | (1 << 31));
+
+            COP0.SetReg(COP0REG.Cause, (COP0.GetReg(COP0REG.Cause) & ~(3 << 28)) | ((copNo & 3) << 28));
 
             if ((COP0.GetReg(COP0REG.Status) & 0b10) == 0)
             {
@@ -835,6 +837,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_LWC1(uint instr)
         {
+            if((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
             int dest = (int)((instr & (0x1F << 16)) >> 16);
             short offset = (short)(instr & 0xFFFF);
@@ -848,6 +855,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_LDC1(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             CPUREG src = (CPUREG)((instr & (0x1F << 21)) >> 21);
             int dest = (int)((instr & (0x1F << 16)) >> 16);
             short offset = (short)(instr & 0xFFFF);
@@ -955,6 +967,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_SWC1(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             int src = (int)((instr & (0x1F << 16)) >> 16);
             CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
             short offset = (short)(instr & 0xFFFF);
@@ -968,6 +985,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_SDC1(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             int src = (int)((instr & (0x1F << 16)) >> 16);
             CPUREG dest = (CPUREG)((instr & (0x1F << 21)) >> 21);
             short offset = (short)(instr & 0xFFFF);
@@ -1591,6 +1613,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_MTC1(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             int dest = (int)((instr & (0x1F << 11)) >> 11);
             CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
             COP1.SetFGR(dest, (int)GetReg(src));
@@ -1600,6 +1627,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_MFC1(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             int src = (int)((instr & (0x1F << 11)) >> 11);
             SetReg(dest, COP1.GetFGR<int>(src));
@@ -1609,6 +1641,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_CTC1(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             uint fcr = (instr & (0x1F << 11)) >> 11;
             CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = GetReg(src);
@@ -1620,6 +1657,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_CFC1(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             uint fcr = (instr & (0x1F << 11)) >> 11;
             CPUREG dest = (CPUREG)((instr & (0x1F << 16)) >> 16);
             long val = fcr == 0 ? default : COP1.FCR31;
@@ -1868,6 +1910,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_BC1T(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
             ulong addr = pc + offset;
             bool cond = COP1.GetCondition();
@@ -1882,6 +1929,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_BC1TL(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
             ulong addr = pc + offset;
             bool cond = COP1.GetCondition();
@@ -1898,6 +1950,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_BC1F(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
             ulong addr = pc + offset;
             bool cond = !COP1.GetCondition();
@@ -1912,6 +1969,11 @@ namespace Chroma64.Emulator.CPU
 
         void MIPS_BC1FL(uint instr)
         {
+            if ((COP0.GetReg(COP0REG.Status) & (1 << 29)) == 0)
+            {
+                TriggerException(11, 1);
+                return;
+            }
             ulong offset = (ulong)(((short)(instr & 0xFFFF)) << 2);
             ulong addr = pc + offset;
             bool cond = !COP1.GetCondition();
