@@ -1,7 +1,6 @@
 ﻿using Chroma64.Emulator.Memory;
 using Chroma64.Emulator.CPU;
 using Chroma.Graphics;
-using Chroma64.Util;
 using Chroma64.Emulator.IO;
 
 namespace Chroma64.Emulator
