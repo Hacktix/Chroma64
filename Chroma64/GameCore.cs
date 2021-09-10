@@ -4,6 +4,7 @@ using Chroma.Graphics;
 using Chroma.Input;
 using Chroma64.Emulator;
 using Chroma64.Emulator.IO;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
@@ -62,14 +63,23 @@ namespace Chroma64
                 if (emu.NeedsRender())
                 {
                     emu.SetFramebufferTexture(ref _tex);
+
+                    float widthScale = (float)Window.Size.Width / _tex.Width;
+                    float heightScale = (float)Window.Size.Height / _tex.Height;
+                    Vector2 scale = new Vector2(
+                        Math.Min(widthScale, heightScale),
+                        Math.Min(widthScale, heightScale)
+                    );
+                    Vector2 pos = new Vector2(
+                        Window.Size.Width / 2 - (scale.X * _tex.Width) / 2,
+                        Window.Size.Height / 2 - (scale.X * _tex.Height) / 2
+                    );
+
                     _tex.Flush();
                     context.DrawTexture(
                         _tex,
-                        Vector2.Zero,
-                        new Vector2(
-                            (float)Window.Size.Width / _tex.Width,
-                            (float)Window.Size.Height / _tex.Height
-                        )
+                        pos,
+                        scale
                     );
                 }
             }
