@@ -4,6 +4,7 @@ using Chroma.Graphics;
 using Chroma64.Emulator.Input;
 using Chroma.Input.GameControllers;
 using Chroma.Input;
+using Chroma.Diagnostics.Logging;
 
 namespace Chroma64.Emulator
 {
@@ -14,6 +15,8 @@ namespace Chroma64.Emulator
         private ROM rom;
         private MemoryBus bus;
         private MainCPU cpu;
+
+        private Log _log = LogManager.GetForCurrentAssembly();
 
         public EmulatorCore(string romPath)
         {
@@ -26,13 +29,19 @@ namespace Chroma64.Emulator
         public void RegisterController(int port, ControllerDevice controller)
         {
             if (port < 4)
+            {
                 bus.PIF.Controllers[port] = controller;
+                _log.Info($"{controller.GetType().Name} connected to channel {port}");
+            }
         }
 
         public void UnregisterController(int port)
         {
             if (port < 4)
+            {
+                _log.Info($"{bus.PIF.Controllers[port].GetType().Name} disconnected from channel {port}");
                 bus.PIF.Controllers[port] = null;
+            }
         }
 
         public void OnButtonPressed(int port, ControllerButton button)

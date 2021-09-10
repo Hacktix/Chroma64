@@ -35,7 +35,7 @@ namespace Chroma64.Emulator.IO
                     if (Controllers[channel] == null)
                     {
                         for (; r > 0; r--)
-                            Bytes[--i] = 0xFF;
+                            Bytes[--i] = 0;
                     }
                     else
                     {
