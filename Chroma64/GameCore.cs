@@ -28,6 +28,30 @@ namespace Chroma64
             if (args.Length >= 0 && File.Exists(args[0]))
             {
                 emu = new EmulatorCore(args[0]);
+
+                // TODO: Custom keyboard mapping
+                N64Controller keyboardCtrl = new N64Controller();
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.U] = N64ControllerButton.ButtonA;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.O] = N64ControllerButton.ButtonB;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.LeftShift] = N64ControllerButton.ButtonZ;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.Space] = N64ControllerButton.ButtonStart;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.Up] = N64ControllerButton.DpadUp;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.Down] = N64ControllerButton.DpadDown;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.Left] = N64ControllerButton.DpadLeft;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.Right] = N64ControllerButton.DpadRight;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.Q] = N64ControllerButton.TriggerLeft;
+                keyboardCtrl.KeyboardButtonMapping[KeyCode.E] = N64ControllerButton.TriggerRight;
+
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.W] = N64ControllerButtonAxis.AnalogUp;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.S] = N64ControllerButtonAxis.AnalogDown;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.A] = N64ControllerButtonAxis.AnalogLeft;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.D] = N64ControllerButtonAxis.AnalogRight;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.I] = N64ControllerButtonAxis.CStickUp;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.K] = N64ControllerButtonAxis.CStickDown;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.J] = N64ControllerButtonAxis.CStickLeft;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.L] = N64ControllerButtonAxis.CStickRight;
+
+                emu.RegisterController(keyboardCtrl, 0);
             }
             Window.CanResize = true;
             Window.Size = new Size(640, 480);

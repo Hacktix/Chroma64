@@ -3,9 +3,6 @@ using Chroma.Input;
 using Chroma.Input.GameControllers;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chroma64.Emulator.Input
 {
@@ -109,7 +106,38 @@ namespace Chroma64.Emulator.Input
 
         public void OnButtonPressed(KeyCode button)
         {
-            throw new NotImplementedException();
+            if (KeyboardButtonMapping.ContainsKey(button))
+                _btnState[KeyboardButtonMapping[button]] = true;
+            else if(KeyboardAxisMapping.ContainsKey(button))
+            {
+                switch(KeyboardAxisMapping[button])
+                {
+                    case N64ControllerButtonAxis.AnalogDown:
+                        _analogY = sbyte.MinValue;
+                        break;
+                    case N64ControllerButtonAxis.AnalogUp:
+                        _analogY = sbyte.MaxValue;
+                        break;
+                    case N64ControllerButtonAxis.AnalogLeft:
+                        _analogX = sbyte.MinValue;
+                        break;
+                    case N64ControllerButtonAxis.AnalogRight:
+                        _analogX = sbyte.MaxValue;
+                        break;
+                    case N64ControllerButtonAxis.CStickDown:
+                        _cDown = true;
+                        break;
+                    case N64ControllerButtonAxis.CStickUp:
+                        _cUp = true;
+                        break;
+                    case N64ControllerButtonAxis.CStickLeft:
+                        _cLeft = true;
+                        break;
+                    case N64ControllerButtonAxis.CStickRight:
+                        _cRight = true;
+                        break;
+                }
+            }
         }
 
         public void OnButtonReleased(ControllerButton button)
@@ -120,7 +148,34 @@ namespace Chroma64.Emulator.Input
 
         public void OnButtonReleased(KeyCode button)
         {
-            throw new NotImplementedException();
+            if (KeyboardButtonMapping.ContainsKey(button))
+                _btnState[KeyboardButtonMapping[button]] = false;
+            else if (KeyboardAxisMapping.ContainsKey(button))
+            {
+                switch (KeyboardAxisMapping[button])
+                {
+                    case N64ControllerButtonAxis.AnalogDown:
+                    case N64ControllerButtonAxis.AnalogUp:
+                        _analogY = 0;
+                        break;
+                    case N64ControllerButtonAxis.AnalogLeft:
+                    case N64ControllerButtonAxis.AnalogRight:
+                        _analogX = 0;
+                        break;
+                    case N64ControllerButtonAxis.CStickDown:
+                        _cDown = false;
+                        break;
+                    case N64ControllerButtonAxis.CStickUp:
+                        _cUp = false;
+                        break;
+                    case N64ControllerButtonAxis.CStickLeft:
+                        _cLeft = false;
+                        break;
+                    case N64ControllerButtonAxis.CStickRight:
+                        _cRight = false;
+                        break;
+                }
+            }
         }
 
         public byte[] ExecPIF(byte[] cmdBuffer)
