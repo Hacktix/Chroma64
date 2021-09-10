@@ -2,7 +2,9 @@
 using Chroma.Diagnostics;
 using Chroma.Graphics;
 using Chroma.Input;
+using Chroma.Input.GameControllers;
 using Chroma64.Emulator;
+using Chroma64.Emulator.Input;
 using Chroma64.Emulator.IO;
 using System;
 using System.Drawing;
@@ -28,30 +30,74 @@ namespace Chroma64
             Window.Size = new Size(640, 480);
         }
 
-        protected override void KeyPressed(KeyEventArgs e) { KeyStateChanged(e.KeyCode, true); }
+        protected override void ControllerConnected(ControllerEventArgs e)
+        {
+            if (emu != null)
+            {
+                // TODO: Fetch custom mappings
+                N64Controller controller = new N64Controller();
 
-        protected override void KeyReleased(KeyEventArgs e) { KeyStateChanged(e.KeyCode, false); }
+                controller.ControllerButtonMapping[ControllerButton.A] = N64ControllerButton.ButtonA;
+                controller.ControllerButtonMapping[ControllerButton.B] = N64ControllerButton.ButtonB;
+                controller.ControllerButtonMapping[ControllerButton.X] = N64ControllerButton.ButtonZ;
+                controller.ControllerButtonMapping[ControllerButton.Menu] = N64ControllerButton.ButtonStart;
+                controller.ControllerButtonMapping[ControllerButton.DpadDown] = N64ControllerButton.DpadDown;
+                controller.ControllerButtonMapping[ControllerButton.DpadUp] = N64ControllerButton.DpadUp;
+                controller.ControllerButtonMapping[ControllerButton.DpadLeft] = N64ControllerButton.DpadLeft;
+                controller.ControllerButtonMapping[ControllerButton.DpadRight] = N64ControllerButton.DpadRight;
+                controller.ControllerButtonMapping[ControllerButton.LeftBumper] = N64ControllerButton.TriggerLeft;
+                controller.ControllerButtonMapping[ControllerButton.RightBumper] = N64ControllerButton.TriggerRight;
+
+                controller.ControllerAxisMapping[ControllerAxis.LeftStickX] = N64ControllerAxis.AnalogStickX;
+                controller.ControllerAxisMapping[ControllerAxis.LeftStickY] = N64ControllerAxis.AnalogStickY;
+                controller.ControllerAxisMapping[ControllerAxis.RightStickX] = N64ControllerAxis.CStickX;
+                controller.ControllerAxisMapping[ControllerAxis.RightStickY] = N64ControllerAxis.CStickY;
+
+                emu.RegisterController(e.Controller.Info.PlayerIndex, controller);
+            }
+        }
+
+        protected override void ControllerButtonPressed(ControllerButtonEventArgs e)
+        {
+            if (emu != null)
+                emu.OnButtonPressed(e.Controller.Info.PlayerIndex, e.Button);
+        }
+
+        protected override void ControllerButtonReleased(ControllerButtonEventArgs e)
+        {
+            if (emu != null)
+                emu.OnButtonReleased(e.Controller.Info.PlayerIndex, e.Button);
+        }
+
+        protected override void ControllerAxisMoved(ControllerAxisEventArgs e)
+        {
+            if (emu != null)
+            {
+                float val = Math.Clamp(e.Value / (float)short.MaxValue, -1, 1);
+                emu.OnAxisChanged(e.Controller.Info.PlayerIndex, e.Axis, val);
+            }
+        }
+
+        protected override void KeyPressed(KeyEventArgs e)
+        {
+            // TODO: Mapping keyboard to custom port
+            if (emu != null)
+                emu.OnButtonPressed(0, e.KeyCode);
+        }
+
+        protected override void KeyReleased(KeyEventArgs e)
+        {
+            // TODO: Mapping keyboard to custom port
+            if (emu != null)
+                emu.OnButtonReleased(0, e.KeyCode);
+        }
+
+
 
         private void KeyStateChanged(KeyCode key, bool pressed)
         {
             if (emu == null)
                 return;
-
-            switch (key)
-            {
-                case KeyCode.A: emu.HandleInput(ControllerButton.A, pressed); break;
-                case KeyCode.B: emu.HandleInput(ControllerButton.B, pressed); break;
-                case KeyCode.Z: emu.HandleInput(ControllerButton.Z, pressed); break;
-                case KeyCode.Return: emu.HandleInput(ControllerButton.Start, pressed); break;
-                case KeyCode.Left: emu.HandleInput(ControllerButton.Left, pressed); break;
-                case KeyCode.Right: emu.HandleInput(ControllerButton.Right, pressed); break;
-                case KeyCode.Up: emu.HandleInput(ControllerButton.Up, pressed); break;
-                case KeyCode.Down: emu.HandleInput(ControllerButton.Down, pressed); break;
-                case KeyCode.Numpad4: emu.HandleInput(ControllerButton.LeftC, pressed); break;
-                case KeyCode.Numpad6: emu.HandleInput(ControllerButton.RightC, pressed); break;
-                case KeyCode.Numpad8: emu.HandleInput(ControllerButton.UpC, pressed); break;
-                case KeyCode.Numpad2: emu.HandleInput(ControllerButton.DownC, pressed); break;
-            }
         }
 
         protected override void Draw(RenderContext context)

@@ -1,7 +1,9 @@
 ﻿using Chroma64.Emulator.Memory;
 using Chroma64.Emulator.CPU;
 using Chroma.Graphics;
-using Chroma64.Emulator.IO;
+using Chroma64.Emulator.Input;
+using Chroma.Input.GameControllers;
+using Chroma.Input;
 
 namespace Chroma64.Emulator
 {
@@ -20,10 +22,49 @@ namespace Chroma64.Emulator
             cpu = new MainCPU(bus);
         }
 
-        public void HandleInput(ControllerButton btn, bool pressed)
+        #region Input
+        public void RegisterController(int port, ControllerDevice controller)
         {
-            bus.PIF.ControllerState[(int)btn] = pressed;
+            if (port < 4)
+                bus.PIF.Controllers[port] = controller;
         }
+
+        public void UnregisterController(int port)
+        {
+            if (port < 4)
+                bus.PIF.Controllers[port] = null;
+        }
+
+        public void OnButtonPressed(int port, ControllerButton button)
+        {
+            if (port < 4 && bus.PIF.Controllers[port] != null)
+                bus.PIF.Controllers[port].OnButtonPressed(button);
+        }
+
+        public void OnButtonPressed(int port, KeyCode button)
+        {
+            if (port < 4 && bus.PIF.Controllers[port] != null)
+                bus.PIF.Controllers[port].OnButtonPressed(button);
+        }
+
+        public void OnButtonReleased(int port, ControllerButton button)
+        {
+            if (port < 4 && bus.PIF.Controllers[port] != null)
+                bus.PIF.Controllers[port].OnButtonReleased(button);
+        }
+
+        public void OnButtonReleased(int port, KeyCode button)
+        {
+            if (port < 4 && bus.PIF.Controllers[port] != null)
+                bus.PIF.Controllers[port].OnButtonReleased(button);
+        }
+
+        public void OnAxisChanged(int port, ControllerAxis axis, float value)
+        {
+            if (port < 4 && bus.PIF.Controllers[port] != null)
+                bus.PIF.Controllers[port].OnAxisChanged(axis, value);
+        }
+        #endregion
 
         public void TickFrame()
         {
@@ -32,6 +73,7 @@ namespace Chroma64.Emulator
             // TODO: Tick components here
         }
 
+        #region Rendering
         public bool NeedsRender()
         {
             return bus.VI.NeedsRender();
@@ -41,5 +83,6 @@ namespace Chroma64.Emulator
         {
             bus.VI.SetFramebuffer(ref tex);
         }
+        #endregion
     }
 }
