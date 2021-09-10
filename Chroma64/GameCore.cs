@@ -87,9 +87,9 @@ namespace Chroma64
 
         protected override void ControllerDisconnected(ControllerEventArgs e)
         {
-            if(emu != null)
+            if (emu != null)
             {
-                if(playerIdPortMap.ContainsKey(e.Controller.Info.PlayerIndex))
+                if (playerIdPortMap.ContainsKey(e.Controller.Info.PlayerIndex))
                 {
                     emu.UnregisterController(playerIdPortMap[e.Controller.Info.PlayerIndex]);
                     playerIdPortMap.Remove(e.Controller.Info.PlayerIndex);

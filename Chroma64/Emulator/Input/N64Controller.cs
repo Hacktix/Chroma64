@@ -108,9 +108,9 @@ namespace Chroma64.Emulator.Input
         {
             if (KeyboardButtonMapping.ContainsKey(button))
                 _btnState[KeyboardButtonMapping[button]] = true;
-            else if(KeyboardAxisMapping.ContainsKey(button))
+            else if (KeyboardAxisMapping.ContainsKey(button))
             {
-                switch(KeyboardAxisMapping[button])
+                switch (KeyboardAxisMapping[button])
                 {
                     case N64ControllerButtonAxis.AnalogDown:
                         _analogY = sbyte.MinValue;

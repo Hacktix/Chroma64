@@ -39,9 +39,9 @@ namespace Chroma64.Emulator
 
         public int RegisterController(ControllerDevice controller)
         {
-            for(int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
             {
-                if(bus.PIF.Controllers[i] == null)
+                if (bus.PIF.Controllers[i] == null)
                 {
                     RegisterController(controller, i);
                     return i;

@@ -148,12 +148,15 @@ namespace Chroma64.Emulator.CPU
             instrsSpecial[56] = MIPS_DSLL;
             instrsSpecial[58] = MIPS_DSRL;
             instrsSpecial[60] = MIPS_DSLL32;
+            instrsSpecial[63] = MIPS_DSRA32;
 
             // Arithmetic Operations
             instrsSpecial[24] = MIPS_MULT;
             instrsSpecial[25] = MIPS_MULTU;
             instrsSpecial[26] = MIPS_DIV;
             instrsSpecial[27] = MIPS_DIVU;
+            instrsSpecial[29] = MIPS_DMULTU;
+            instrsSpecial[31] = MIPS_DDIVU;
             instrsSpecial[32] = MIPS_ADD;
             instrsSpecial[33] = MIPS_ADDU;
             instrsSpecial[34] = MIPS_SUB;
@@ -1310,6 +1313,18 @@ namespace Chroma64.Emulator.CPU
             LogInstr("DSLL32", $"{src} << {shift} -> {val:X16} << {shift:X} -> {res:X16} -> {dest}");
         }
 
+        void MIPS_DSRA32(uint instr)
+        {
+            CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            CPUREG dest = (CPUREG)((instr & (0x1F << 11)) >> 11);
+            long val = GetReg(src);
+            int shift = (int)(((instr & (0x1F << 6)) >> 6) + 32);
+            long res = val >> shift;
+            SetReg(dest, res);
+
+            LogInstr("DSRA32", $"{src} << {shift} -> {val:X16} << {shift:X} -> {res:X16} -> {dest}");
+        }
+
         void MIPS_DSRL(uint instr)
         {
             CPUREG src = (CPUREG)((instr & (0x1F << 16)) >> 16);
@@ -1433,6 +1448,33 @@ namespace Chroma64.Emulator.CPU
             hi = resHi;
 
             LogInstr("DIVU", $"{op1} / {op2} -> {val1:X8} / {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
+        }
+
+        void MIPS_DMULTU(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong val1 = (ulong)GetReg(op1);
+            ulong val2 = (ulong)GetReg(op2);
+            ulong resLo;
+            hi = (long)Math.BigMul(val1, val2, out resLo);
+            lo = (long)resLo;
+
+            LogInstr("DMULTU", $"{op1} * {op2} -> {val1:X16} * {val2:X16} -> ({resLo:X16} -> LO | {hi:X16} -> HI)");
+        }
+
+        void MIPS_DDIVU(uint instr)
+        {
+            CPUREG op1 = (CPUREG)((instr & (0x1F << 21)) >> 21);
+            CPUREG op2 = (CPUREG)((instr & (0x1F << 16)) >> 16);
+            ulong val1 = (ulong)GetReg(op1);
+            ulong val2 = (ulong)GetReg(op2);
+            ulong resLo = val2 == 0 ? ulong.MaxValue : (val1 / val2);
+            ulong resHi = val2 == 0 ? val1 : (val1 % val2);
+            lo = (long)resLo;
+            hi = (long)resHi;
+
+            LogInstr("DDIVU", $"{op1} / {op2} -> {val1:X8} / {val2:X8} -> ({resLo:X16} -> LO | {resHi:X16} -> HI)");
         }
 
         void MIPS_DADD(uint instr)
@@ -1948,6 +1990,17 @@ namespace Chroma64.Emulator.CPU
             int fmt = (int)((instr & (0x1F << 21)) >> 21);
             switch (cond)
             {
+                case 0x2:
+                    switch (fmt)
+                    {
+                        case 0b10001:
+                            COP1.C_EQ_D(op1, op2);
+                            break;
+                        case 0b10000:
+                            COP1.C_EQ_S(op1, op2);
+                            break;
+                    }
+                    break;
                 case 0xE:
                     switch (fmt)
                     {

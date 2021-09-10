@@ -228,6 +228,10 @@ namespace Chroma64.Emulator.CPU
 
         #region Compare Instructions
 
+        // C.EQ.fmt
+        public void C_EQ_D(int op1, int op2) { SetCondition(GetFGR<double>(op1) == GetFGR<double>(op2)); }
+        public void C_EQ_S(int op1, int op2) { SetCondition(GetFGR<float>(op1) == GetFGR<float>(op2)); }
+
         // C.LE.fmt
         public void C_LE_D(int op1, int op2) { SetCondition(GetFGR<double>(op1) <= GetFGR<double>(op2)); }
         public void C_LE_S(int op1, int op2) { SetCondition(GetFGR<float>(op1) <= GetFGR<float>(op2)); }

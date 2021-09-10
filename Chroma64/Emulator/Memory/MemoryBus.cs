@@ -173,10 +173,7 @@ namespace Chroma64.Emulator.Memory
         {
             // KUSEG
             if (addr < 0x80000000)
-            {
-                log.Error("Unimplemented access to KUSEG");
-                return 0;
-            }
+                throw new Exception("Unimplemented access to KUSEG");
 
             // KSEG0
             else if (addr < 0xA0000000)
@@ -188,17 +185,11 @@ namespace Chroma64.Emulator.Memory
 
             // KSSEG
             else if (addr < 0xE0000000)
-            {
-                log.Error("Unimplemented access to KSSEG");
-                return 0;
-            }
+                throw new Exception("Unimplemented access to KSSEG");
 
             // KSEG3
             else
-            {
-                log.Error("Unimplemented access to KSEG3");
-                return 0;
-            }
+                throw new Exception("Unimplemented access to KSEG3");
         }
     }
 }
