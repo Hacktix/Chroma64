@@ -15,7 +15,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Chroma" Version="0.49.3" />
+      <PackageReference Include="Chroma" Version="0.49.4" />
     </ItemGroup>
 
 </Project>
