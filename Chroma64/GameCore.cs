@@ -7,6 +7,7 @@ using Chroma64.Emulator;
 using Chroma64.Emulator.Input;
 using Chroma64.Emulator.IO;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
@@ -18,6 +19,8 @@ namespace Chroma64
         private EmulatorCore emu;
 
         private Texture _tex = null;
+
+        private Dictionary<int, int> playerIdPortMap = new Dictionary<int, int>();
 
         public GameCore(string[] args) : base(new(false, false))
         {
@@ -53,7 +56,20 @@ namespace Chroma64
                 controller.ControllerAxisMapping[ControllerAxis.RightStickX] = N64ControllerAxis.CStickX;
                 controller.ControllerAxisMapping[ControllerAxis.RightStickY] = N64ControllerAxis.CStickY;
 
-                emu.RegisterController(e.Controller.Info.PlayerIndex, controller);
+                int port = emu.RegisterController(controller);
+                playerIdPortMap[e.Controller.Info.PlayerIndex] = port;
+            }
+        }
+
+        protected override void ControllerDisconnected(ControllerEventArgs e)
+        {
+            if(emu != null)
+            {
+                if(playerIdPortMap.ContainsKey(e.Controller.Info.PlayerIndex))
+                {
+                    emu.UnregisterController(playerIdPortMap[e.Controller.Info.PlayerIndex]);
+                    playerIdPortMap.Remove(e.Controller.Info.PlayerIndex);
+                }
             }
         }
 
@@ -90,14 +106,6 @@ namespace Chroma64
             // TODO: Mapping keyboard to custom port
             if (emu != null)
                 emu.OnButtonReleased(0, e.KeyCode);
-        }
-
-
-
-        private void KeyStateChanged(KeyCode key, bool pressed)
-        {
-            if (emu == null)
-                return;
         }
 
         protected override void Draw(RenderContext context)

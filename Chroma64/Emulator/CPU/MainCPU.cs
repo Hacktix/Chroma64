@@ -305,8 +305,6 @@ namespace Chroma64.Emulator.CPU
             else
                 pc = 0xBFC00380;
 
-            //Log.Info($"Exception with code {exceptionCode}, jumping to 0x{pc:X8}");
-
             branchQueued = 0;
         }
 

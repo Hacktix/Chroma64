@@ -26,18 +26,33 @@ namespace Chroma64.Emulator
         }
 
         #region Input
-        public void RegisterController(int port, ControllerDevice controller)
+        public int RegisterController(ControllerDevice controller, int port)
         {
-            if (port < 4)
+            if (port >= 0 && port < 4)
             {
                 bus.PIF.Controllers[port] = controller;
                 _log.Info($"{controller.GetType().Name} connected to channel {port}");
+                return port;
             }
+            return -1;
+        }
+
+        public int RegisterController(ControllerDevice controller)
+        {
+            for(int i = 0; i < 4; i++)
+            {
+                if(bus.PIF.Controllers[i] == null)
+                {
+                    RegisterController(controller, i);
+                    return i;
+                }
+            }
+            return -1;
         }
 
         public void UnregisterController(int port)
         {
-            if (port < 4)
+            if (port >= 0 && port < 4)
             {
                 _log.Info($"{bus.PIF.Controllers[port].GetType().Name} disconnected from channel {port}");
                 bus.PIF.Controllers[port] = null;
