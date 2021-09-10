@@ -84,9 +84,9 @@ namespace Chroma64.Emulator.IO
             uint intr = GetRegister(MI.INTR_REG);
 
             if ((intr & intr_mask) != 0)
-                bus.CPU.COP0.SetReg(CPU.COP0REG.Cause, bus.CPU.COP0.GetReg(CPU.COP0REG.Cause) | (1 << 10));
+                bus.CPU.COP0.Registers[(int)CPU.COP0REG.Cause] |= (1 << 10);
             else
-                bus.CPU.COP0.SetReg(CPU.COP0REG.Cause, bus.CPU.COP0.GetReg(CPU.COP0REG.Cause) & ~(1 << 10));
+                bus.CPU.COP0.Registers[(int)CPU.COP0REG.Cause] &= ~(1 << 10);
         }
     }
 }
