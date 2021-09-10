@@ -1,5 +1,5 @@
-﻿using Chroma64.Emulator.Memory;
-using Chroma64.Util;
+﻿using Chroma.Diagnostics.Logging;
+using Chroma64.Emulator.Memory;
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -39,6 +39,8 @@ namespace Chroma64.Emulator.CPU
         // Branch Instruction Variables
         private int branchQueued = 0;
         private ulong branchTarget;
+
+        private Log log = LogManager.GetForCurrentAssembly();
 
         public MainCPU(MemoryBus bus)
         {
@@ -259,7 +261,10 @@ namespace Chroma64.Emulator.CPU
                         catch (Exception e)
                         {
                             pc -= 4;
-                            Log.FatalError($"Unimplemented Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                            log.Error($"Exception @ Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                            log.Exception(e);
+                            Console.ReadKey();
+                            Environment.Exit(-1);
                         }
 #else
                         instrs[opcode](instr);
@@ -311,7 +316,7 @@ namespace Chroma64.Emulator.CPU
         {
             if (debugging)
             {
-                Log.Info($"[PC = 0x{(pc - 4) & 0xFFFFFFFF:X8}] [INSTR:0x{Bus.Read<uint>(pc - 4):X8}] {instr.PadRight(6)} : {msg}");
+                log.Info($"[PC = 0x{(pc - 4) & 0xFFFFFFFF:X8}] [INSTR:0x{Bus.Read<uint>(pc - 4):X8}] {instr.PadRight(6)} : {msg}");
                 var input = Console.ReadKey();
                 if (input.Key == ConsoleKey.Enter)
                     debugging = false;
@@ -353,7 +358,10 @@ namespace Chroma64.Emulator.CPU
             catch (Exception e)
             {
                 pc -= 4;
-                Log.FatalError($"Unimplemented Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                log.Error($"Exception @ Special Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                log.Exception(e);
+                Console.ReadKey();
+                Environment.Exit(-1);
             }
 #else
             instrsSpecial[opcode](instr);
@@ -371,7 +379,10 @@ namespace Chroma64.Emulator.CPU
             catch (Exception e)
             {
                 pc -= 4;
-                Log.FatalError($"Unimplemented REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                log.Error($"Exception @ REGIMM Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                log.Exception(e);
+                Console.ReadKey();
+                Environment.Exit(-1);
             }
 #else
             instrsRegimm[opcode](instr);
@@ -396,7 +407,10 @@ namespace Chroma64.Emulator.CPU
                     catch (Exception e)
                     {
                         pc -= 4;
-                        Log.FatalError($"Unimplemented FPU Instruction 0x{instr:X8} [Opcode {cop1opcode}] at PC = 0x{pc:X16}");
+                        log.Error($"Exception @ FPU Instruction 0x{instr:X8} [Opcode {cop1opcode}] at PC = 0x{pc:X16}");
+                        log.Exception(e);
+                        Console.ReadKey();
+                        Environment.Exit(-1);
                     }
 #else
                     instrsFPU[cop1opcode](instr);
@@ -415,7 +429,10 @@ namespace Chroma64.Emulator.CPU
                         catch (Exception e)
                         {
                             pc -= 4;
-                            Log.FatalError($"Unimplemented FPU Branch Instruction 0x{instr:X8} [Opcode {fpuBranchOpcode}] at PC = 0x{pc:X16}");
+                            log.Error($"Exception @ FPU Branch Instruction 0x{instr:X8} [Opcode {fpuBranchOpcode}] at PC = 0x{pc:X16}");
+                            log.Exception(e);
+                            Console.ReadKey();
+                            Environment.Exit(-1);
                         }
 #else
                         instrsFPUBranch[fpuBranchOpcode](instr);
@@ -431,7 +448,10 @@ namespace Chroma64.Emulator.CPU
                         catch (Exception e)
                         {
                             pc -= 4;
-                            Log.FatalError($"Unimplemented COP1 Instruction 0x{instr:X8} [Opcode {maybeOp}] at PC = 0x{pc:X16}");
+                            log.Error($"Exception @ COP1 Instruction 0x{instr:X8} [Opcode {maybeOp}] at PC = 0x{pc:X16}");
+                            log.Exception(e);
+                            Console.ReadKey();
+                            Environment.Exit(-1);
                         }
 #else
                         instrsCOP1[maybeOp](instr);
@@ -452,7 +472,10 @@ namespace Chroma64.Emulator.CPU
                     catch (Exception e)
                     {
                         pc -= 4;
-                        Log.FatalError($"Unimplemented TLB Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                        log.Error($"Exception @ TLB Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                        log.Exception(e);
+                        Console.ReadKey();
+                        Environment.Exit(-1);
                     }
 #else
                     instrsTLB[opcode](instr);
@@ -469,7 +492,10 @@ namespace Chroma64.Emulator.CPU
                     catch (Exception e)
                     {
                         pc -= 4;
-                        Log.FatalError($"Unimplemented COP0 Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                        log.Error($"Exception @ COP0 Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                        log.Exception(e);
+                        Console.ReadKey();
+                        Environment.Exit(-1);
                     }
 #else
                     instrsCOP0[opcode](instr);
@@ -487,7 +513,10 @@ namespace Chroma64.Emulator.CPU
                 catch (Exception e)
                 {
                     pc -= 4;
-                    Log.FatalError($"Unimplemented COPz Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    log.Error($"Exception @ COPz Instruction 0x{instr:X8} [Opcode {opcode}] at PC = 0x{pc:X16}");
+                    log.Exception(e);
+                    Console.ReadKey();
+                    Environment.Exit(-1);
                 }
 #else
                 instrsCOPz[opcode](instr);
@@ -1944,7 +1973,7 @@ namespace Chroma64.Emulator.CPU
                     }
                     break;
                 default:
-                    Log.FatalError($"C.cond.fmt : Unimplemented condition {cond:X2} in instruction {instr:X8}");
+                    log.Error($"C.cond.fmt : Unimplemented condition {cond:X2} in instruction {instr:X8}");
                     break;
             }
         }

@@ -1,4 +1,4 @@
-﻿using Chroma64.Util;
+﻿using Chroma.Diagnostics.Logging;
 using System;
 using System.IO;
 
@@ -6,6 +6,8 @@ namespace Chroma64.Emulator.Memory
 {
     unsafe class ROM : BigEndianMemory
     {
+        private Log log = LogManager.GetForCurrentAssembly();
+
         public ROM(string filePath) : base(File.ReadAllBytes(filePath))
         {
             fixed (byte* romPtr = Bytes)
@@ -16,7 +18,7 @@ namespace Chroma64.Emulator.Memory
                 {
                     // Native big endian format (ABCD)
                     case 0x40123780:
-                        Log.Info("Format: Native");
+                        log.Info("Format: Native");
                         break;
 
                     // Byte-swapped format (BADC)
@@ -27,7 +29,7 @@ namespace Chroma64.Emulator.Memory
                             romPtr[i] = romPtr[i + 1];
                             romPtr[i + 1] = tmp;
                         }
-                        Log.Info("Format: Byte-swapped");
+                        log.Info("Format: Byte-swapped");
                         break;
 
                     // Little endian format (DCBA)
@@ -41,12 +43,12 @@ namespace Chroma64.Emulator.Memory
                             romPtr[i + 2] = romPtr[i + 1];
                             romPtr[i + 1] = tmp;
                         }
-                        Log.Info("Format: Little-endian");
+                        log.Info("Format: Little-endian");
                         break;
 
                     // Some other unknown format or a file that's not a ROM, error
                     default:
-                        Log.Error("Unknown ROM format");
+                        log.Error("Unknown ROM format");
                         break;
                 }
 
@@ -54,12 +56,12 @@ namespace Chroma64.Emulator.Memory
                 Array.Reverse(Bytes);
 
                 // Extra validation + logging
-                Log.Info($"Header: 0x{Read<uint>(0).ToString("X4")}");
+                log.Info($"Header: 0x{Read<uint>(0).ToString("X4")}");
                 if ((*(uint*)(romPtr + Bytes.Length - 4)) != 0x80371240)
-                    Log.FatalError("Invalid ROM File!");
+                    log.Error("Invalid ROM File!");
 
-                Log.Info($"CRC1: 0x{Read<uint>(0x10):X8}");
-                Log.Info($"CRC2: 0x{Read<uint>(0x14):X8}");
+                log.Info($"CRC1: 0x{Read<uint>(0x10):X8}");
+                log.Info($"CRC2: 0x{Read<uint>(0x14):X8}");
             }
         }
     }

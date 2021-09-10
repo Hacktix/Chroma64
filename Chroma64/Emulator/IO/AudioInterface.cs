@@ -1,7 +1,6 @@
 ﻿using Chroma.Audio;
 using Chroma.Audio.Sources;
 using Chroma64.Emulator.Memory;
-using Chroma64.Util;
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;

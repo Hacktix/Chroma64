@@ -1,6 +1,7 @@
-﻿using Chroma64.Emulator.CPU;
+﻿using Chroma.Diagnostics.Logging;
+using Chroma64.Emulator.CPU;
 using Chroma64.Emulator.IO;
-using Chroma64.Util;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.Memory
@@ -22,6 +23,8 @@ namespace Chroma64.Emulator.Memory
         public PIF PIF;
 
         public MainCPU CPU;
+
+        private Log log = LogManager.GetForCurrentAssembly();
 
         public MemoryBus(ROM rom)
         {
@@ -59,7 +62,7 @@ namespace Chroma64.Emulator.Memory
             // TODO: SP Registers
             else if (addr >= 0x04040000 && addr <= 0x040FFFFF)
             {
-                Log.Warning($"Unimplemented read from SP Register @ 0x{addr:X8}");
+                log.Warning($"Unimplemented read from SP Register @ 0x{addr:X8}");
                 return default;
             }
 
@@ -95,7 +98,9 @@ namespace Chroma64.Emulator.Memory
             else if (addr >= 0x1FC007C0 && addr <= 0x1FC007FF)
                 return PIF.Read<T>(addr & 0x3F);
 
-            Log.CriticalError($"Read from unknown address 0x{addr:X8}");
+            log.Error($"Read from unknown address 0x{addr:X8}");
+            Console.ReadKey();
+            Environment.Exit(-1);
             return default;
         }
 
@@ -123,7 +128,7 @@ namespace Chroma64.Emulator.Memory
             // TODO: SP Registers
             else if (addr >= 0x04040000 && addr <= 0x040FFFFF)
             {
-                Log.Warning($"Unimplemented write to SP Register @ 0x{addr:X8}");
+                log.Warning($"Unimplemented write to SP Register @ 0x{addr:X8}");
                 return;
             }
 
@@ -156,7 +161,11 @@ namespace Chroma64.Emulator.Memory
                 PIF.Write(addr & 0x3F, val);
 
             else
-                Log.CriticalError($"Write to unknown address 0x{addr:X8}");
+            {
+                log.Error($"Write to unknown address 0x{addr:X8}");
+                Console.ReadKey();
+                Environment.Exit(-1);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,7 +174,7 @@ namespace Chroma64.Emulator.Memory
             // KUSEG
             if (addr < 0x80000000)
             {
-                Log.FatalError("Unimplemented access to KUSEG");
+                log.Error("Unimplemented access to KUSEG");
                 return 0;
             }
 
@@ -180,14 +189,14 @@ namespace Chroma64.Emulator.Memory
             // KSSEG
             else if (addr < 0xE0000000)
             {
-                Log.FatalError("Unimplemented access to KSSEG");
+                log.Error("Unimplemented access to KSSEG");
                 return 0;
             }
 
             // KSEG3
             else
             {
-                Log.FatalError("Unimplemented access to KSEG3");
+                log.Error("Unimplemented access to KSEG3");
                 return 0;
             }
         }

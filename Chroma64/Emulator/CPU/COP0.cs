@@ -1,5 +1,4 @@
-﻿using Chroma64.Util;
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 
 namespace Chroma64.Emulator.CPU

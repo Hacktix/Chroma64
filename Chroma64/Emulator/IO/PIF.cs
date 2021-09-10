@@ -1,5 +1,5 @@
-﻿using Chroma64.Emulator.Memory;
-using Chroma64.Util;
+﻿using Chroma.Diagnostics.Logging;
+using Chroma64.Emulator.Memory;
 using System;
 
 namespace Chroma64.Emulator.IO
@@ -11,6 +11,8 @@ namespace Chroma64.Emulator.IO
 
     class PIF : BigEndianMemory
     {
+        private Log log = LogManager.GetForCurrentAssembly();
+
         public bool[] ControllerState = new bool[14];
 
         public PIF() : base(0x40) { }
@@ -84,7 +86,7 @@ namespace Chroma64.Emulator.IO
                             break;
 
                         default:
-                            Log.FatalError($"Unimplemented PIF Command 0x{cmdBuf[0]:X2} [t = {t} | r = {r} | {cmdBuf.Length} byte(s)]");
+                            log.Error($"Unimplemented PIF Command 0x{cmdBuf[0]:X2} [t = {t} | r = {r} | {cmdBuf.Length} byte(s)]");
                             break;
                     }
 
