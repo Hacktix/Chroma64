@@ -8,33 +8,44 @@ namespace Chroma64.Emulator.Input
 {
     public enum N64ControllerButton
     {
-        ButtonA, ButtonB, ButtonZ, ButtonStart, DpadUp, DpadDown, DpadLeft, DpadRight, TriggerLeft, TriggerRight
+        ButtonA, ButtonB, ButtonZ, ButtonStart, DpadUp, DpadDown, DpadLeft, DpadRight, TriggerLeft, TriggerRight,
+        CUp, CDown, CLeft, CRight, // Explicit Controller C-Button support, probably never used but whatever
     }
 
     public enum N64ControllerAxis
     {
-        CStickX, CStickY, AnalogStickX, AnalogStickY
+        CX, CY, // C-Buttons are treated as axes because most modern controllers don't have two DPads
+        AnalogStickX, AnalogStickY
     }
 
     public enum N64ControllerButtonAxis
     {
-        CStickUp, CStickDown, CStickLeft, CStickRight, AnalogUp, AnalogDown, AnalogLeft, AnalogRight
+        CUp, CDown, CLeft, CRight, // C-Buttons are treated as axes because most modern controllers don't have two DPads
+        AnalogUp, AnalogDown, AnalogLeft, AnalogRight
     }
 
     class N64Controller : ControllerDevice
     {
-        public static float CSTICK_SENSITIVITY = 0.35f;
+        /// <summary>
+        /// Float value between 0 and 1 determining how far a controller axis needs to be tilted to be recognized as a C-Button input.
+        /// </summary>
+        public static float C_AXIS_SENSITIVITY = 0.35f;
 
         public Dictionary<ControllerButton, N64ControllerButton> ControllerButtonMapping = new Dictionary<ControllerButton, N64ControllerButton>();
         public Dictionary<ControllerAxis, N64ControllerAxis> ControllerAxisMapping = new Dictionary<ControllerAxis, N64ControllerAxis>();
         public Dictionary<KeyCode, N64ControllerButton> KeyboardButtonMapping = new Dictionary<KeyCode, N64ControllerButton>();
         public Dictionary<KeyCode, N64ControllerButtonAxis> KeyboardAxisMapping = new Dictionary<KeyCode, N64ControllerButtonAxis>();
 
+        // Map of N64ControllerButtons to their state (whether they're pressed or not)
         private Dictionary<N64ControllerButton, bool> _btnState = new Dictionary<N64ControllerButton, bool>();
+
+        // Separate C-Button state variables (for Controller Axis support)
         private bool _cUp = false;
         private bool _cDown = false;
         private bool _cLeft = false;
         private bool _cRight = false;
+
+        // Analog Stick state variables
         private sbyte _analogX = 0;
         private sbyte _analogY = 0;
 
@@ -54,6 +65,57 @@ namespace Chroma64.Emulator.Input
             _btnState[N64ControllerButton.TriggerRight] = false;
         }
 
+        #region Controller Input Handlers
+        public void OnButtonPressed(ControllerButton button)
+        {
+            if (ControllerButtonMapping.ContainsKey(button))
+            {
+                switch (ControllerButtonMapping[button])
+                {
+                    case N64ControllerButton.CUp:
+                        _cUp = true;
+                        break;
+                    case N64ControllerButton.CDown:
+                        _cDown = true;
+                        break;
+                    case N64ControllerButton.CLeft:
+                        _cLeft = true;
+                        break;
+                    case N64ControllerButton.CRight:
+                        _cRight = true;
+                        break;
+                    default:
+                        _btnState[ControllerButtonMapping[button]] = true;
+                        break;
+                }
+            }
+        }
+
+        public void OnButtonReleased(ControllerButton button)
+        {
+            if (ControllerButtonMapping.ContainsKey(button))
+            {
+                switch (ControllerButtonMapping[button])
+                {
+                    case N64ControllerButton.CUp:
+                        _cUp = false;
+                        break;
+                    case N64ControllerButton.CDown:
+                        _cDown = false;
+                        break;
+                    case N64ControllerButton.CLeft:
+                        _cLeft = false;
+                        break;
+                    case N64ControllerButton.CRight:
+                        _cRight = false;
+                        break;
+                    default:
+                        _btnState[ControllerButtonMapping[button]] = false;
+                        break;
+                }
+            }
+        }
+
         public void OnAxisChanged(ControllerAxis axis, float value)
         {
             if (ControllerAxisMapping.ContainsKey(axis))
@@ -66,8 +128,8 @@ namespace Chroma64.Emulator.Input
                     case N64ControllerAxis.AnalogStickY:
                         _analogY = (sbyte)(-value * sbyte.MaxValue);
                         break;
-                    case N64ControllerAxis.CStickX:
-                        if (Math.Abs(value) >= CSTICK_SENSITIVITY)
+                    case N64ControllerAxis.CX:
+                        if (Math.Abs(value) >= C_AXIS_SENSITIVITY)
                         {
                             if (value < 0)
                                 _cLeft = true;
@@ -80,8 +142,8 @@ namespace Chroma64.Emulator.Input
                             _cRight = false;
                         }
                         break;
-                    case N64ControllerAxis.CStickY:
-                        if (Math.Abs(value) >= CSTICK_SENSITIVITY)
+                    case N64ControllerAxis.CY:
+                        if (Math.Abs(value) >= C_AXIS_SENSITIVITY)
                         {
                             if (value < 0)
                                 _cUp = true;
@@ -97,13 +159,9 @@ namespace Chroma64.Emulator.Input
                 }
             }
         }
+        #endregion
 
-        public void OnButtonPressed(ControllerButton button)
-        {
-            if (ControllerButtonMapping.ContainsKey(button))
-                _btnState[ControllerButtonMapping[button]] = true;
-        }
-
+        #region Keyboard Input Handlers
         public void OnButtonPressed(KeyCode button)
         {
             if (KeyboardButtonMapping.ContainsKey(button))
@@ -124,26 +182,20 @@ namespace Chroma64.Emulator.Input
                     case N64ControllerButtonAxis.AnalogRight:
                         _analogX = sbyte.MaxValue;
                         break;
-                    case N64ControllerButtonAxis.CStickDown:
+                    case N64ControllerButtonAxis.CDown:
                         _cDown = true;
                         break;
-                    case N64ControllerButtonAxis.CStickUp:
+                    case N64ControllerButtonAxis.CUp:
                         _cUp = true;
                         break;
-                    case N64ControllerButtonAxis.CStickLeft:
+                    case N64ControllerButtonAxis.CLeft:
                         _cLeft = true;
                         break;
-                    case N64ControllerButtonAxis.CStickRight:
+                    case N64ControllerButtonAxis.CRight:
                         _cRight = true;
                         break;
                 }
             }
-        }
-
-        public void OnButtonReleased(ControllerButton button)
-        {
-            if (ControllerButtonMapping.ContainsKey(button))
-                _btnState[ControllerButtonMapping[button]] = false;
         }
 
         public void OnButtonReleased(KeyCode button)
@@ -162,21 +214,22 @@ namespace Chroma64.Emulator.Input
                     case N64ControllerButtonAxis.AnalogRight:
                         _analogX = 0;
                         break;
-                    case N64ControllerButtonAxis.CStickDown:
+                    case N64ControllerButtonAxis.CDown:
                         _cDown = false;
                         break;
-                    case N64ControllerButtonAxis.CStickUp:
+                    case N64ControllerButtonAxis.CUp:
                         _cUp = false;
                         break;
-                    case N64ControllerButtonAxis.CStickLeft:
+                    case N64ControllerButtonAxis.CLeft:
                         _cLeft = false;
                         break;
-                    case N64ControllerButtonAxis.CStickRight:
+                    case N64ControllerButtonAxis.CRight:
                         _cRight = false;
                         break;
                 }
             }
         }
+        #endregion
 
         public byte[] ExecPIF(byte[] cmdBuffer)
         {

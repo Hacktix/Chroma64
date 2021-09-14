@@ -46,10 +46,10 @@ namespace Chroma64
                 keyboardCtrl.KeyboardAxisMapping[KeyCode.S] = N64ControllerButtonAxis.AnalogDown;
                 keyboardCtrl.KeyboardAxisMapping[KeyCode.A] = N64ControllerButtonAxis.AnalogLeft;
                 keyboardCtrl.KeyboardAxisMapping[KeyCode.D] = N64ControllerButtonAxis.AnalogRight;
-                keyboardCtrl.KeyboardAxisMapping[KeyCode.I] = N64ControllerButtonAxis.CStickUp;
-                keyboardCtrl.KeyboardAxisMapping[KeyCode.K] = N64ControllerButtonAxis.CStickDown;
-                keyboardCtrl.KeyboardAxisMapping[KeyCode.J] = N64ControllerButtonAxis.CStickLeft;
-                keyboardCtrl.KeyboardAxisMapping[KeyCode.L] = N64ControllerButtonAxis.CStickRight;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.I] = N64ControllerButtonAxis.CUp;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.K] = N64ControllerButtonAxis.CDown;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.J] = N64ControllerButtonAxis.CLeft;
+                keyboardCtrl.KeyboardAxisMapping[KeyCode.L] = N64ControllerButtonAxis.CRight;
 
                 emu.RegisterController(keyboardCtrl, 0);
             }
@@ -77,8 +77,8 @@ namespace Chroma64
 
                 controller.ControllerAxisMapping[ControllerAxis.LeftStickX] = N64ControllerAxis.AnalogStickX;
                 controller.ControllerAxisMapping[ControllerAxis.LeftStickY] = N64ControllerAxis.AnalogStickY;
-                controller.ControllerAxisMapping[ControllerAxis.RightStickX] = N64ControllerAxis.CStickX;
-                controller.ControllerAxisMapping[ControllerAxis.RightStickY] = N64ControllerAxis.CStickY;
+                controller.ControllerAxisMapping[ControllerAxis.RightStickX] = N64ControllerAxis.CX;
+                controller.ControllerAxisMapping[ControllerAxis.RightStickY] = N64ControllerAxis.CY;
 
                 int port = emu.RegisterController(controller);
                 playerIdPortMap[e.Controller.Info.PlayerIndex] = port;
