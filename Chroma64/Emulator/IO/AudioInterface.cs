@@ -3,6 +3,7 @@ using Chroma.Audio.Sources;
 using Chroma64.Emulator.Memory;
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Chroma64.Emulator.IO
@@ -48,10 +49,20 @@ namespace Chroma64.Emulator.IO
 
                 if (len < buffer.Length)
                 {
-                    for (int i = len; i < buffer.Length; i++)
+                    // Very hacky sound stretching, *kinda* works but not really
+                    Span<short> samples = MemoryMarshal.Cast<byte, short>(data.AsSpan());
+                    Span<short> buf = MemoryMarshal.Cast<byte, short>(buffer);
+
+                    int diff = buf.Length - samples.Length;
+                    int doubleCounter = (int)Math.Ceiling((float)buf.Length / diff) - 1;
+                    int realCounter = doubleCounter;
+                    for (int i = 0, j = 0; i < buf.Length; i++)
                     {
-                        buffer[i++] = data[data.Length - 2];
-                        buffer[i] = data[data.Length - 1];
+                        buf[i] = samples[Math.Clamp(j, 0, samples.Length - 1)];
+                        if ((--realCounter) < 0)
+                            realCounter = doubleCounter;
+                        else
+                            j++;
                     }
                 }
 
@@ -109,13 +120,11 @@ namespace Chroma64.Emulator.IO
             if (addr >= (ulong)AI.DACRATE_REG && addr < (ulong)AI.DACRATE_REG + 4)
             {
                 base.Write(addr, val);
-                int dacrate = (int)(48681812 / ((GetRegister(AI.DACRATE_REG) & 0x3FFF) + 1));
-                /*if (wave.Frequency != dacrate)
-                {
-                    wave.Dispose();
-                    wave = new Waveform(new AudioFormat(SampleFormat.S16, ByteOrder.BigEndian), PushSamples, ChannelMode.Stereo, dacrate);
-                    wave.Play();
-                }*/
+                int dacrate = (int)(48681812 / 4 / ((GetRegister(AI.DACRATE_REG) & 0x3FFF) + 1));
+                GameCore.AudioOut.Close();
+                GameCore.AudioOut.Open(null, 48000, dacrate);
+                wave = new Waveform(new AudioFormat(SampleFormat.S16, ByteOrder.BigEndian), PushSamples, ChannelMode.Stereo, 48000);
+                wave.Play();
                 return;
             }
 

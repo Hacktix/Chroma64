@@ -1,4 +1,5 @@
 ﻿using Chroma;
+using Chroma.Audio;
 using Chroma.Diagnostics;
 using Chroma.Graphics;
 using Chroma.Input;
@@ -16,6 +17,8 @@ namespace Chroma64
 {
     internal class GameCore : Game
     {
+        public static AudioOutput AudioOut;
+
         private EmulatorCore emu;
 
         private Texture _tex = null;
@@ -24,7 +27,8 @@ namespace Chroma64
 
         public GameCore(string[] args) : base(new(false, false))
         {
-            Audio.Output.Open(null, 48000, 1024);
+            AudioOut = Audio.Output;
+
             if (args.Length >= 0 && File.Exists(args[0]))
             {
                 emu = new EmulatorCore(args[0]);
