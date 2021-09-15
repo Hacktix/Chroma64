@@ -171,16 +171,16 @@ namespace Chroma64.Emulator.Input
                 switch (KeyboardAxisMapping[button])
                 {
                     case N64ControllerButtonAxis.AnalogDown:
-                        _analogY = sbyte.MinValue;
+                        _analogY = -125;
                         break;
                     case N64ControllerButtonAxis.AnalogUp:
-                        _analogY = sbyte.MaxValue;
+                        _analogY = 125;
                         break;
                     case N64ControllerButtonAxis.AnalogLeft:
-                        _analogX = sbyte.MinValue;
+                        _analogX = -125;
                         break;
                     case N64ControllerButtonAxis.AnalogRight:
-                        _analogX = sbyte.MaxValue;
+                        _analogX = 125;
                         break;
                     case N64ControllerButtonAxis.CDown:
                         _cDown = true;
