@@ -49,6 +49,9 @@ namespace Chroma64.Emulator.Input
         private sbyte _analogX = 0;
         private sbyte _analogY = 0;
 
+        // Controller Pak Variables
+        private byte[] _mempak = new byte[0x8000];
+
         private Log _log = LogManager.GetForCurrentAssembly();
 
         public N64Controller()
@@ -267,11 +270,17 @@ namespace Chroma64.Emulator.Input
 
                 // Read Controller Accessory
                 case 0x02:
-                    return new byte[33];
+                    int readAddr = ((cmdBuffer[1] << 8) | (cmdBuffer[2] & 0xE0)) & 0x7FFF;
+                    byte[] data = new byte[33];
+                    Buffer.BlockCopy(_mempak, readAddr, data, 0, 32);
+                    data[32] = CRC8(data);
+                    return data;
 
                 // Write Controller Accessory
                 case 0x03:
-                    return new byte[] { 0xFF };
+                    int writeAddr = ((cmdBuffer[1] << 8) | (cmdBuffer[2] & 0xE0)) & 0x7FFF;
+                    Buffer.BlockCopy(cmdBuffer, 3, _mempak, writeAddr, 32);
+                    return new byte[] { CRC8(_mempak, writeAddr) };
 
                 // Unknown
                 default:
@@ -280,6 +289,23 @@ namespace Chroma64.Emulator.Input
                     Environment.Exit(-1);
                     return new byte[0];
             }
+        }
+
+        private static byte CRC8(byte[] data, int offset = 0)
+        {
+            byte crc = 0;
+            for (int i = 0; i <= 32; i++)
+            {
+                for (int j = 7; j >= 0; j--)
+                {
+                    byte xor_val = (byte)(((crc & 0x80) != 0) ? 0x85 : 0x00);
+                    crc <<= 1;
+                    if (i < 32 && (data[i + offset] & (1 << j)) != 0)
+                        crc |= 1;
+                    crc ^= xor_val;
+                }
+            }
+            return crc;
         }
     }
 }
